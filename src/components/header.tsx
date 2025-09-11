@@ -37,7 +37,7 @@ export default function Header() {
         <div className="h-8 w-8">
             <Logo />
         </div>
-        <span className="font-headline text-xl font-semibold">Lista Limpeza Fácil</span>
+        <span className="font-headline text-xl font-semibold">Lista de Limpeza Fácil</span>
       </Link>
       <div className="ml-auto">
         {user && (

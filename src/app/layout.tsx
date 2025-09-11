@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Lista Limpeza Fácil",
+  title: "Lista de Limpeza Fácil",
   description: "Gerencie sua lista de compras de limpeza de forma fácil e organizada.",
   manifest: "/manifest.webmanifest",
   icons: {

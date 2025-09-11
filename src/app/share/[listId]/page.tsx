@@ -36,7 +36,7 @@ export default function SharedListPage() {
             <div className="w-10 h-10">
                 <Logo />
             </div>
-            <h1 className="font-headline text-xl font-semibold">Lista Limpeza Fácil</h1>
+            <h1 className="font-headline text-xl font-semibold">Lista de Limpeza Fácil</h1>
         </div>
       <Card className="w-full max-w-2xl shadow-lg">
         <CardHeader>

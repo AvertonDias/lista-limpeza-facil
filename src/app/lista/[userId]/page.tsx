@@ -12,6 +12,8 @@ import {
   doc,
   onSnapshot,
   setDoc,
+  addDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import type { Material, ShoppingListItem } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -36,11 +47,14 @@ import {
   Trash2,
   ShoppingCart,
   Search,
+  MessageSquarePlus,
 } from "lucide-react";
 import { Logo } from "@/components/icons/logo";
 import { CheckIcon } from "@/components/icons/check-icon";
 import { PlusIcon } from "@/components/icons/plus-icon";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 
@@ -48,6 +62,8 @@ interface UserData {
     displayName?: string;
     email?: string;
 }
+
+type FeedbackType = "suggestion" | "doubt" | null;
 
 export default function PublicListPage() {
   const { toast } = useToast();
@@ -61,6 +77,13 @@ export default function PublicListPage() {
   const [customItemName, setCustomItemName] = useState("");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Feedback Modal State
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<FeedbackType>(null);
+  const [feedbackName, setFeedbackName] = useState("");
+  const [feedbackText, setFeedbackText] = useState("");
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
   const userId = params.userId as string;
 
@@ -212,6 +235,46 @@ export default function PublicListPage() {
     const updatedList = shoppingList.filter((i) => i.id !== itemId);
     updateShoppingListInFirestore(updatedList);
   };
+  
+  const handleFeedbackSubmit = async () => {
+    if (!feedbackType || !feedbackText.trim() || (feedbackType === 'doubt' && !feedbackName.trim())) {
+      toast({
+        variant: "destructive",
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos necessários.",
+      });
+      return;
+    }
+
+    setIsSubmittingFeedback(true);
+    try {
+      await addDoc(collection(db, "feedback"), {
+        listOwnerId: userId,
+        type: feedbackType,
+        text: feedbackText,
+        name: feedbackType === 'doubt' ? feedbackName : null,
+        createdAt: serverTimestamp(),
+        status: "new",
+      });
+      toast({
+        title: "Mensagem Enviada!",
+        description: "Obrigado pelo seu feedback.",
+      });
+      setIsFeedbackModalOpen(false);
+      setFeedbackType(null);
+      setFeedbackName("");
+      setFeedbackText("");
+    } catch (error) {
+      console.error("Error sending feedback: ", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao enviar",
+        description: "Não foi possível enviar sua mensagem. Tente novamente.",
+      });
+    } finally {
+      setIsSubmittingFeedback(false);
+    }
+  };
 
   const shoppingListIds = useMemo(() => new Set(shoppingList.map(item => item.id)), [shoppingList]);
   
@@ -280,13 +343,77 @@ export default function PublicListPage() {
 
   return (
      <div className="flex min-h-screen w-full flex-col">
-       <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 px-4 md:px-6">
+       <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 px-4 md:px-6 justify-between">
             <div className="flex items-center gap-2">
                 <div className="h-8 w-8">
                     <Logo />
                 </div>
                 <span className="font-headline text-xl font-semibold">Lista de Limpeza Fácil</span>
             </div>
+            <Dialog open={isFeedbackModalOpen} onOpenChange={(isOpen) => {
+                setIsFeedbackModalOpen(isOpen);
+                if (!isOpen) {
+                  setFeedbackType(null);
+                  setFeedbackName("");
+                  setFeedbackText("");
+                }
+            }}>
+                <DialogTrigger asChild>
+                    <Button variant="outline">
+                        <MessageSquarePlus className="mr-2 h-4 w-4" />
+                        Sugestões ou Dúvidas
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Deixe sua mensagem</DialogTitle>
+                        <DialogDescription>
+                            Sua opinião é importante! Selecione o tipo de mensagem que deseja enviar.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {!feedbackType ? (
+                        <div className="flex justify-center gap-4 py-8">
+                            <Button onClick={() => setFeedbackType('suggestion')} size="lg">Sugestão</Button>
+                            <Button onClick={() => setFeedbackType('doubt')} size="lg" variant="secondary">Dúvida</Button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4 py-4">
+                            <h3 className="font-medium text-lg text-center">{feedbackType === 'suggestion' ? 'Enviar Sugestão' : 'Tirar Dúvida'}</h3>
+                            {feedbackType === 'doubt' && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">Seu Nome</Label>
+                                    <Input 
+                                        id="name" 
+                                        placeholder="Digite seu nome"
+                                        value={feedbackName}
+                                        onChange={(e) => setFeedbackName(e.target.value)}
+                                    />
+                                </div>
+                            )}
+                             <div className="space-y-2">
+                                <Label htmlFor="message">{feedbackType === 'suggestion' ? 'Sugestão' : 'Dúvida'}</Label>
+                                <Textarea 
+                                    id="message" 
+                                    placeholder={`Digite sua ${feedbackType === 'suggestion' ? 'sugestão' : 'dúvida'} aqui...`}
+                                    value={feedbackText}
+                                    onChange={(e) => setFeedbackText(e.target.value)} 
+                                />
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter>
+                         {feedbackType && (
+                             <>
+                                <Button variant="ghost" onClick={() => setFeedbackType(null)}>Voltar</Button>
+                                <Button onClick={handleFeedbackSubmit} disabled={isSubmittingFeedback}>
+                                    {isSubmittingFeedback && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Enviar
+                                </Button>
+                             </>
+                         )}
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </header>
        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-24">
         {error ? (

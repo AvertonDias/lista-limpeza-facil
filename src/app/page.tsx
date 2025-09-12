@@ -15,15 +15,18 @@ import {
   doc,
   onSnapshot,
   setDoc,
-  getDoc
+  getDoc,
+  orderBy,
+  Timestamp,
 } from "firebase/firestore";
-import type { Material, ShoppingListItem } from "@/types";
+import type { Material, ShoppingListItem, Feedback } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -34,6 +37,18 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -45,8 +60,12 @@ import {
   Loader2,
   Edit,
   Search,
+  MessageSquare,
+  Lightbulb,
 } from "lucide-react";
 import Header from "@/components/header";
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -54,10 +73,12 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
+  const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [newItemName, setNewItemName] = useState("");
   const [materialsLoading, setMaterialsLoading] = useState(true);
+  const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -104,11 +125,32 @@ export default function DashboardPage() {
             setDoc(shoppingListDocRef, { userId: user.uid, items: [] });
         }
       });
+      
+      // Listen for feedback
+      setFeedbackLoading(true);
+      const feedbackQuery = query(collection(db, "feedback"), where("listOwnerId", "==", user.uid), orderBy("createdAt", "desc"));
+      const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
+        const feedbackData: Feedback[] = [];
+        snapshot.forEach(doc => {
+            feedbackData.push({ id: doc.id, ...doc.data()} as Feedback);
+        });
+        setFeedback(feedbackData);
+        setFeedbackLoading(false);
+      }, (error) => {
+        console.error("Error fetching feedback: ", error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao buscar feedback",
+          description: "Não foi possível carregar as sugestões e dúvidas.",
+        });
+        setFeedbackLoading(false);
+      });
 
 
       return () => {
         unsubscribeMaterials();
         unsubscribeShoppingList();
+        unsubscribeFeedback();
       }
     }
   }, [user, toast]);
@@ -218,6 +260,24 @@ export default function DashboardPage() {
      }
   }
 
+  const handleDeleteFeedback = async (feedbackId: string) => {
+    try {
+      await deleteDoc(doc(db, "feedback", feedbackId));
+      toast({
+        title: "Mensagem Removida",
+        description: "A mensagem foi removida com sucesso.",
+      });
+    } catch (e) {
+      console.error("Error deleting feedback: ", e);
+      toast({
+        variant: "destructive",
+        title: "Erro ao remover",
+        description: "Não foi possível remover a mensagem.",
+      });
+    }
+  };
+
+
   const filteredMaterials = useMemo(() => {
     return materials.filter((material) =>
       material.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -232,108 +292,172 @@ export default function DashboardPage() {
     );
   }
 
+  const formatFeedbackDate = (timestamp: Timestamp | null) => {
+    if (!timestamp) return "Data desconhecida";
+    return formatDistanceToNow(timestamp.toDate(), { addSuffix: true, locale: ptBR });
+  }
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <Header />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         <div className="grid gap-8 md:grid-cols-3">
-          <div className="md:col-span-2">
-            <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
-              <h1 className="font-headline text-3xl font-bold tracking-tight">
-                Materiais de Limpeza
-              </h1>
-              <div className="flex gap-2">
-                 <Button onClick={handleSharePublicList} variant="outline">
-                    <BookUser className="mr-2" />
-                    Compartilhar Materiais
-                </Button>
-                <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
-                    setIsFormOpen(isOpen);
-                    if (!isOpen) {
-                      setEditingMaterial(null);
-                      setNewItemName("");
-                    }
-                }}>
-                  <DialogTrigger asChild>
-                    <Button onClick={() => handleOpenForm()}>
-                      <Plus className="mr-2" />
-                      Adicionar Item
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>
-                        {editingMaterial ? "Editar Item" : "Adicionar Novo Item"}
-                      </DialogTitle>
-                       <DialogDescription>
-                          Adicione ou edite um item da sua lista de materiais para que outros possam adicioná-lo à sua lista de compras.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Nome do Item</Label>
-                        <Input
-                          id="name"
-                          value={newItemName}
-                          onChange={(e) => setNewItemName(e.target.value)}
-                          placeholder="Ex: Detergente"
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
-                      <Button onClick={handleSaveMaterial}>Salvar</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
-            </div>
-
-            <div className="relative mb-6">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input 
-                    type="text"
-                    placeholder="Pesquisar material..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10"
-                />
-            </div>
-
-            {materialsLoading ? (
-                 <div className="flex justify-center items-center h-64">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                 </div>
-            ) : filteredMaterials.length > 0 ? (
-                <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filteredMaterials.map((material) => (
-                    <Card
-                    key={material.id}
-                    className="flex flex-col overflow-hidden transition-shadow hover:shadow-lg group cursor-pointer"
-                    onClick={() => handleAddItemToShoppingList(material)}
-                    >
-                    <CardHeader className="flex-row items-center justify-between">
-                        <CardTitle className="font-headline text-lg">
-                        {material.name}
-                        </CardTitle>
-                        <div className="flex justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {e.stopPropagation(); handleOpenForm(material)}}>
-                                <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {e.stopPropagation(); handleDeleteMaterial(material.id)}}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+          <div className="md:col-span-2 space-y-8">
+           <div>
+              <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+                <h1 className="font-headline text-3xl font-bold tracking-tight">
+                  Materiais de Limpeza
+                </h1>
+                <div className="flex gap-2">
+                  <Button onClick={handleSharePublicList} variant="outline">
+                      <BookUser className="mr-2" />
+                      Compartilhar Materiais
+                  </Button>
+                  <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
+                      setIsFormOpen(isOpen);
+                      if (!isOpen) {
+                        setEditingMaterial(null);
+                        setNewItemName("");
+                      }
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button onClick={() => handleOpenForm()}>
+                        <Plus className="mr-2" />
+                        Adicionar Item
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>
+                          {editingMaterial ? "Editar Item" : "Adicionar Novo Item"}
+                        </DialogTitle>
+                        <DialogDescription>
+                            Adicione ou edite um item da sua lista de materiais para que outros possam adicioná-lo à sua lista de compras.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="name">Nome do Item</Label>
+                          <Input
+                            id="name"
+                            value={newItemName}
+                            onChange={(e) => setNewItemName(e.target.value)}
+                            placeholder="Ex: Detergente"
+                          />
                         </div>
-                    </CardHeader>
-                    </Card>
-                ))}
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
+                        <Button onClick={handleSaveMaterial}>Salvar</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
-            ) : (
-                <div className="text-center text-muted-foreground py-16">
-                    <p className="text-lg">{searchQuery ? "Nenhum item encontrado." : "Nenhum item cadastrado."}</p>
-                    <p>{searchQuery ? "Tente uma busca diferente." : "Clique em 'Adicionar Item' para começar."}</p>
-                </div>
-            )}
+              </div>
+
+              <div className="relative mb-6">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input 
+                      type="text"
+                      placeholder="Pesquisar material..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10"
+                  />
+              </div>
+
+              {materialsLoading ? (
+                  <div className="flex justify-center items-center h-64">
+                      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                  </div>
+              ) : filteredMaterials.length > 0 ? (
+                  <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {filteredMaterials.map((material) => (
+                      <Card
+                      key={material.id}
+                      className="flex flex-col overflow-hidden transition-shadow hover:shadow-lg group cursor-pointer"
+                      onClick={() => handleAddItemToShoppingList(material)}
+                      >
+                      <CardHeader className="flex-row items-center justify-between">
+                          <CardTitle className="font-headline text-lg">
+                          {material.name}
+                          </CardTitle>
+                          <div className="flex justify-end gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {e.stopPropagation(); handleOpenForm(material)}}>
+                                  <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {e.stopPropagation(); handleDeleteMaterial(material.id)}}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                          </div>
+                      </CardHeader>
+                      </Card>
+                  ))}
+                  </div>
+              ) : (
+                  <div className="text-center text-muted-foreground py-16">
+                      <p className="text-lg">{searchQuery ? "Nenhum item encontrado." : "Nenhum item cadastrado."}</p>
+                      <p>{searchQuery ? "Tente uma busca diferente." : "Clique em 'Adicionar Item' para começar."}</p>
+                  </div>
+              )}
+            </div>
+
+            <div>
+                <h2 className="font-headline text-3xl font-bold tracking-tight mb-6">
+                  Sugestões e Dúvidas
+                </h2>
+                {feedbackLoading ? (
+                   <div className="flex justify-center items-center h-64">
+                      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                   </div>
+                ) : feedback.length > 0 ? (
+                    <div className="space-y-4">
+                        {feedback.map(item => (
+                            <Card key={item.id}>
+                                <CardHeader className="flex flex-row justify-between items-start">
+                                    <div>
+                                        <CardTitle className="flex items-center gap-2 text-lg">
+                                            {item.type === 'doubt' ? <MessageSquare className="text-primary" /> : <Lightbulb className="text-amber-500" />}
+                                            {item.type === 'doubt' ? `Dúvida de ${item.name}` : 'Sugestão'}
+                                        </CardTitle>
+                                        <CardDescription className="text-xs pt-1">
+                                            {formatFeedbackDate(item.createdAt)}
+                                        </CardDescription>
+                                    </div>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Esta ação não pode ser desfeita. Isso removerá permanentemente a mensagem.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleDeleteFeedback(item.id)}>Continuar</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-sm text-foreground">{item.text}</p>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center text-muted-foreground py-16">
+                        <p className="text-lg">Nenhuma sugestão ou dúvida recebida.</p>
+                        <p>As mensagens enviadas pela página pública aparecerão aqui.</p>
+                    </div>
+                )}
+            </div>
+
           </div>
           <div className="md:col-span-1">
             <Card className="sticky top-24">

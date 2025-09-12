@@ -1,0 +1,32 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Qualquer pessoa pode ler os materiais, mas apenas o dono pode criar/editar/deletar.
+    match /materials/{materialId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+    
+    // Apenas o usuário pode escrever em seus próprios dados de perfil, mas todos podem ler.
+    match /users/{userId} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Qualquer pessoa pode ler a lista para a página pública, mas apenas o dono pode modificar.
+    match /shoppingLists/{userId} {
+      allow read: if true;
+      allow create, update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Qualquer pessoa pode criar um feedback, mas apenas o dono da lista pode ler/deletar.
+    match /feedback/{feedbackId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.listOwnerId;
+    }
+  }
+}

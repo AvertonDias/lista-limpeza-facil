@@ -16,8 +16,8 @@ import {
   onSnapshot,
   setDoc,
   getDoc,
-  orderBy,
   Timestamp,
+  getDocs,
 } from "firebase/firestore";
 import type { Material, ShoppingListItem, Feedback } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -128,11 +128,17 @@ export default function DashboardPage() {
       
       // Listen for feedback
       setFeedbackLoading(true);
-      const feedbackQuery = query(collection(db, "feedback"), where("listOwnerId", "==", user.uid), orderBy("createdAt", "desc"));
+      const feedbackQuery = query(collection(db, "feedback"), where("listOwnerId", "==", user.uid));
       const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
         const feedbackData: Feedback[] = [];
         snapshot.forEach(doc => {
             feedbackData.push({ id: doc.id, ...doc.data()} as Feedback);
+        });
+        // Sort feedback by date client-side
+        feedbackData.sort((a, b) => {
+            const dateA = a.createdAt?.toDate() || new Date(0);
+            const dateB = b.createdAt?.toDate() || new Date(0);
+            return dateB.getTime() - dateA.getTime();
         });
         setFeedback(feedbackData);
         setFeedbackLoading(false);
@@ -386,9 +392,25 @@ export default function DashboardPage() {
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {e.stopPropagation(); handleOpenForm(material)}}>
                                   <Edit className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {e.stopPropagation(); handleDeleteMaterial(material.id)}}>
-                                  <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {e.stopPropagation()}}>
+                                      <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Esta ação não pode ser desfeita. Isso removerá o item da sua lista de materiais e também da lista de compras.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteMaterial(material.id)}>Continuar</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                           </div>
                       </CardHeader>
                       </Card>

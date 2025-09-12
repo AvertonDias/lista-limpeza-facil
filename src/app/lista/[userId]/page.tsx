@@ -220,7 +220,7 @@ export default function PublicListPage() {
 
   const renderShoppingList = () => (
     <>
-      <div className="flex w-full items-center space-x-2 mb-4">
+      <div className="w-full space-y-2 mb-4">
         <Input 
           type="text" 
           placeholder="Adicionar item avulso"
@@ -228,7 +228,7 @@ export default function PublicListPage() {
           onChange={(e) => setCustomItemName(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
         />
-        <Button type="submit" onClick={handleAddCustomItem}>Adicionar</Button>
+        <Button type="submit" onClick={handleAddCustomItem} className="w-full">Adicionar</Button>
       </div>
       <Separator className="mb-4" />
       {shoppingList.length > 0 ? (
@@ -358,5 +358,3 @@ export default function PublicListPage() {
      </div>
   );
 }
-
-    

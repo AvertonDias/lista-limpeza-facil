@@ -1,6 +1,6 @@
 {
   "name": "Lista de Limpeza Fácil",
-  "short_name": "Lista Fácil",
+  "short_name": "Lista Limpeza Fácil",
   "description": "Gerencie sua lista de compras de limpeza de forma fácil e organizada.",
   "start_url": "/",
   "display": "standalone",

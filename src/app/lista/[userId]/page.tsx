@@ -178,15 +178,7 @@ export default function PublicListPage() {
   const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {
     if (!userId) return;
     const shoppingListDocRef = doc(db, "shoppingLists", userId);
-    try {
-      await setDoc(shoppingListDocRef, { items: newList, userId: userId }, { merge: true });
-    } catch(e) {
-         toast({
-            variant: "destructive",
-            title: "Erro",
-            description: "Ocorreu um erro ao atualizar a lista. Você pode não ter permissão para executar esta ação.",
-        });
-    }
+    await setDoc(shoppingListDocRef, { items: newList, userId: userId }, { merge: true });
   }
   
   const handleToggleItemInShoppingList = (item: Material) => {

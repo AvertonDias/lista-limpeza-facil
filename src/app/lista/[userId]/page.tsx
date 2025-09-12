@@ -275,7 +275,7 @@ export default function PublicListPage() {
                 <span className="font-headline text-xl font-semibold">Lista de {pageOwner?.displayName || 'Compras'}</span>
             </div>
         </header>
-       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-24 lg:pb-8">
+       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-24">
         {error ? (
              <div className="text-center text-destructive py-16">{error}</div>
         ) : (
@@ -342,14 +342,14 @@ export default function PublicListPage() {
                         <span className="sr-only">Abrir lista de compras</span>
                     </Button>
                 </SheetTrigger>
-                <SheetContent side="bottom" className="h-[90%] flex flex-col">
-                    <SheetHeader>
+                <SheetContent side="bottom" className="h-[90%] flex flex-col p-0">
+                    <SheetHeader className="p-6 pb-0">
                         <SheetTitle className="font-headline text-2xl">Lista de Compras</SheetTitle>
                     </SheetHeader>
-                    <div className="flex-1 overflow-y-auto py-4">
+                    <div className="flex-1 overflow-y-auto py-4 px-6">
                         {renderShoppingList()}
                     </div>
-                    <SheetFooter>
+                    <SheetFooter className="p-6 pt-0">
                         <Button onClick={() => setIsSheetOpen(false)} className="w-full">Fechar</Button>
                     </SheetFooter>
                 </SheetContent>

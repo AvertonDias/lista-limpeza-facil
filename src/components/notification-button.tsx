@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { BellRing, BellOff } from 'lucide-react';
 
+const FCM_VAPID_KEY = 'AAAA_s3mXlM:APA91bF9R1gYV_zK8w7B5J7s2Z_4hQ6K2h-Y6e7Z_3J_rJ5c5d0jF1o3X8zY6yX6f0z5k_tH7j7r_X1i9w_Z5f3k_2w_x_9c_V0e_B7n_N6o_C1p_T4t_R_S_Q_W_E_Y_U';
+
 export default function NotificationButton() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -27,7 +29,7 @@ export default function NotificationButton() {
                 if (!messaging) return;
 
                 try {
-                    const currentToken = await getToken(messaging, { vapidKey: 'BGPAu-EMBx9dG68-A3g5iN9X8zY6_t5k_jR9w_Z5f3k_2w_x_9c_V0e_B7n_N6o_C1p_T4t_R_S_Q_W_E_Y_U' });
+                    const currentToken = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
                     if (currentToken) {
                         const userDocRef = doc(db, 'users', user.uid);
                         const userDoc = await getDoc(userDocRef);
@@ -66,7 +68,7 @@ export default function NotificationButton() {
         });
         
         // Get token and save it
-        const currentToken = await getToken(messaging, { vapidKey: 'BGPAu-EMBx9dG68-A3g5iN9X8zY6_t5k_jR9w_Z5f3k_2w_x_9c_V0e_B7n_N6o_C1p_T4t_R_S_Q_W_E_Y_U' });
+        const currentToken = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
 
         if (currentToken) {
           console.log('FCM Token:', currentToken);

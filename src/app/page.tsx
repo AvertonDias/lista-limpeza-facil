@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -78,6 +79,7 @@ export default function DashboardPage() {
              userId: data.userId
             } as Material);
         });
+        materialsData.sort((a, b) => a.name.localeCompare(b.name));
         setMaterials(materialsData);
         setMaterialsLoading(false);
       }, (error) => {

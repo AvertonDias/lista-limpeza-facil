@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -91,6 +92,7 @@ export default function PublicListPage() {
         materialsSnapshot.forEach((doc) => {
           materialsData.push({ id: doc.id, ...doc.data() } as Material);
         });
+        materialsData.sort((a, b) => a.name.localeCompare(b.name));
         setMaterials(materialsData);
 
         const shoppingListDoc = await getDoc(shoppingListDocRef);
@@ -110,6 +112,7 @@ export default function PublicListPage() {
             querySnapshot.forEach((doc) => {
               materialsData.push({ id: doc.id, ...doc.data() } as Material);
             });
+            materialsData.sort((a, b) => a.name.localeCompare(b.name));
             setMaterials(materialsData);
           },
           (e) => {

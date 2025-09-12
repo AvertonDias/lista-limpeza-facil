@@ -21,8 +21,8 @@ import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("usuario@exemplo.com");
-  const [password, setPassword] = useState("senha123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const { user, login, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -89,7 +89,7 @@ export default function LoginPage() {
                 <Input
                 id="email"
                 type="email"
-                placeholder="seu@email.com"
+                placeholder="usuario@exemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -101,7 +101,7 @@ export default function LoginPage() {
                     <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="********"
+                    placeholder="senha123"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required

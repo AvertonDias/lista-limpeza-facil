@@ -1,13 +1,13 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from "react";
-import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from "@/lib/firebase";
+import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential } from "@/lib/firebase";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, pass: string) => Promise<void>;
-  signup: (email: string, pass: string) => Promise<void>;
+  login: (email: string, pass: string) => Promise<UserCredential>;
+  signup: (email: string, pass: string) => Promise<UserCredential>;
   logout: () => Promise<void>;
 }
 
@@ -25,12 +25,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
   
-  const login = async (email: string, pass: string) => {
-    await signInWithEmailAndPassword(auth, email, pass);
+  const login = (email: string, pass: string) => {
+    return signInWithEmailAndPassword(auth, email, pass);
   };
   
-  const signup = async (email: string, pass: string) => {
-    await createUserWithEmailAndPassword(auth, email, pass);
+  const signup = (email: string, pass: string) => {
+    return createUserWithEmailAndPassword(auth, email, pass);
   };
   
   const logout = async () => {

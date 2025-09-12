@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, createUserWithEmailAndPassword } from "firebase/auth";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, createUserWithEmailAndPassword, UserCredential } from "firebase/auth";
 import { getFirestore, arrayRemove, arrayUnion } from "firebase/firestore";
 import { getMessaging, getToken, deleteToken } from "firebase/messaging";
 
@@ -23,4 +23,4 @@ const messaging = (typeof window !== 'undefined') ? getMessaging(app) : null;
 
 
 export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, getToken, deleteToken, arrayRemove, arrayUnion };
-export type { User };
+export type { User, UserCredential };

@@ -19,6 +19,9 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import { Logo } from "@/components/icons/logo";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -49,7 +52,17 @@ export default function SignupPage() {
     }
     setIsSubmitting(true);
     try {
-      await signup(email, password);
+      const userCredential = await signup(email, password);
+      if (userCredential.user) {
+        // Create user document in Firestore
+        const userDocRef = doc(db, "users", userCredential.user.uid);
+        await setDoc(userDocRef, {
+          email: userCredential.user.email,
+          displayName: userCredential.user.displayName,
+          createdAt: new Date(),
+        }, { merge: true });
+      }
+
       toast({
         title: "Cadastro bem-sucedido!",
         description: "Sua conta foi criada.",

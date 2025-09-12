@@ -8,9 +8,6 @@ import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
 import { BellRing, BellOff, Loader2 } from 'lucide-react';
 
-// This is the VAPID key from the Firebase console (Project settings > Cloud Messaging > Web configuration)
-const FCM_VAPID_KEY = "BGPAu-EMBx9dG68-A3g5iN9X8zY6_t5k_jR9w_Z5f3k_2w_x_9c_V0e_B7n_N6o_C1p_T4t_R_S_Q_W_E_Y_U";
-
 export default function NotificationButton() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -21,17 +18,15 @@ export default function NotificationButton() {
 
   // Effect to check current permission status and if token is saved
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window && user) {
+    if (typeof window !== 'undefined' && 'Notification' in window && user && messaging) {
         const currentPermission = Notification.permission;
         setNotificationStatus(currentPermission);
         
         // Check if the token is already saved for this user only if permission is granted
         if (currentPermission === 'granted') {
             const checkToken = async () => {
-                if (!messaging) return;
-
                 try {
-                    const currentToken = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
+                    const currentToken = await getToken(messaging);
                     if (currentToken) {
                         const userDocRef = doc(db, 'users', user.uid);
                         const userDoc = await getDoc(userDocRef);
@@ -72,7 +67,7 @@ export default function NotificationButton() {
       if (permission === 'granted') {
         // Get token and save it
         try {
-            const currentToken = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
+            const currentToken = await getToken(messaging);
             if (currentToken) {
                 const userDocRef = doc(db, 'users', user.uid);
                 
@@ -124,7 +119,7 @@ export default function NotificationButton() {
     
     setIsProcessing(true);
     try {
-        const currentToken = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
+        const currentToken = await getToken(messaging);
         if (currentToken) {
             // Delete token from FCM
             await deleteToken(messaging);

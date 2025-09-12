@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from "react";
-import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential } from "@/lib/firebase";
+import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging } from "@/lib/firebase";
+import { getToken } from "firebase/messaging";
 
 interface AuthContextType {
   user: User | null;
@@ -22,6 +23,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(user);
       setLoading(false);
     });
+
+    // Initialize messaging and get token, this helps ensure the service worker is registered.
+    const initializeMessaging = async () => {
+        if (typeof window !== "undefined" && "serviceWorker" in navigator && messaging) {
+            try {
+                // We don't need to do anything with the token here, just get it to ensure registration.
+                await getToken(messaging);
+            } catch (error) {
+                // This can fail if permission is not granted, which is fine.
+                // We're just trying to initialize it.
+                console.log("FCM Service Worker registration check finished.");
+            }
+        }
+    };
+    initializeMessaging();
+    
     return () => unsubscribe();
   }, []);
   

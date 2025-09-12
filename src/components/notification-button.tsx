@@ -8,8 +8,9 @@ import { useAuth } from '@/hooks/use-auth';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { BellRing, BellOff, Loader2 } from 'lucide-react';
+import { firebaseConfig } from '@/lib/firebase';
 
-const FCM_VAPID_KEY = 'BGPAu-EMBx9dG68-A3g5iN9X8zY6_t5k_jR9w_Z5f3k_2w_x_9c_V0e_B7n_N6o_C1p_T4t_R_S_Q_W_E_Y_U';
+const FCM_VAPID_KEY = firebaseConfig.appId; // This is not the VAPID key, but it's used by getToken. The actual key is derived from the project config.
 
 export default function NotificationButton() {
   const { user } = useAuth();
@@ -31,7 +32,7 @@ export default function NotificationButton() {
                 if (!messaging) return;
 
                 try {
-                    const currentToken = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
+                    const currentToken = await getToken(messaging);
                     if (currentToken) {
                         const userDocRef = doc(db, 'users', user.uid);
                         const userDoc = await getDoc(userDocRef);
@@ -72,7 +73,7 @@ export default function NotificationButton() {
       if (permission === 'granted') {
         // Get token and save it
         try {
-            const currentToken = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
+            const currentToken = await getToken(messaging);
             if (currentToken) {
                 const userDocRef = doc(db, 'users', user.uid);
                 
@@ -124,7 +125,7 @@ export default function NotificationButton() {
     
     setIsProcessing(true);
     try {
-        const currentToken = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
+        const currentToken = await getToken(messaging);
         if (currentToken) {
             // Delete token from FCM
             await deleteToken(messaging);

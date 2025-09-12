@@ -3,7 +3,7 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User,
 import { getFirestore, arrayRemove, arrayUnion } from "firebase/firestore";
 import { getMessaging, getToken, deleteToken } from "firebase/messaging";
 
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
   authDomain: "studio-1326322560-ad791.firebaseapp.com",
   projectId: "studio-1326322560-ad791",

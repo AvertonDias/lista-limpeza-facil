@@ -18,27 +18,30 @@ export default function NotificationButton() {
   // Effect to check current permission status and if token is saved
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window && user) {
-        setNotificationStatus(Notification.permission);
+        const currentPermission = Notification.permission;
+        setNotificationStatus(currentPermission);
         
-        // Check if the token is already saved for this user
-        const checkToken = async () => {
-            if (!messaging) return;
+        // Check if the token is already saved for this user only if permission is granted
+        if (currentPermission === 'granted') {
+            const checkToken = async () => {
+                if (!messaging) return;
 
-            try {
-                const currentToken = await getToken(messaging, { vapidKey: 'BGPAu-EMBx9dG68-A3g5iN9X8zY6_t5k_jR9w_Z5f3k_2w_x_9c_V0e_B7n_N6o_C1p_T4t_R_S_Q_W_E_Y_U' });
-                if (currentToken) {
-                    const userDocRef = doc(db, 'users', user.uid);
-                    const userDoc = await getDoc(userDocRef);
-                    if (userDoc.exists() && userDoc.data().fcmTokens?.includes(currentToken)) {
-                        setIsTokenSaved(true);
+                try {
+                    const currentToken = await getToken(messaging, { vapidKey: 'BGPAu-EMBx9dG68-A3g5iN9X8zY6_t5k_jR9w_Z5f3k_2w_x_9c_V0e_B7n_N6o_C1p_T4t_R_S_Q_W_E_Y_U' });
+                    if (currentToken) {
+                        const userDocRef = doc(db, 'users', user.uid);
+                        const userDoc = await getDoc(userDocRef);
+                        if (userDoc.exists() && userDoc.data().fcmTokens?.includes(currentToken)) {
+                            setIsTokenSaved(true);
+                        }
                     }
+                } catch (err) {
+                     console.error('An error occurred while retrieving token for check. ', err);
                 }
-            } catch (err) {
-                 console.error('An error occurred while retrieving token for check. ', err);
-            }
-        };
+            };
 
-        checkToken();
+            checkToken();
+        }
     }
   }, [user]);
   

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { AuthProvider } from "@/components/auth-provider";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
@@ -9,9 +9,13 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   icons: {
     icon: "/images/placeholder-icon.png",
+    apple: "/images/placeholder-icon.png",
   },
-  themeColor: "#F5F5F5",
 };
+
+export const viewport: Viewport = {
+  themeColor: "#F5F5F5",
+}
 
 export default function RootLayout({
   children,

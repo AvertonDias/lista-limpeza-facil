@@ -15,6 +15,7 @@ import {
 import { Logo } from "@/components/icons/logo";
 import { LogOut, User } from "lucide-react";
 import { useRouter } from "next/navigation";
+import NotificationButton from "./notification-button";
 
 export default function Header() {
   const { user, logout } = useAuth();
@@ -58,6 +59,9 @@ export default function Header() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                 <NotificationButton />
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Sair</span>

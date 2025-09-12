@@ -68,30 +68,36 @@ export default function NotificationButton() {
         });
         
         // Get token and save it
-        const currentToken = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
+        try {
+            const currentToken = await getToken(messaging, { vapidKey: FCM_VAPID_KEY });
+            if (currentToken) {
+                console.log('FCM Token:', currentToken);
+                const userDocRef = doc(db, 'users', user.uid);
+                
+                // Use setDoc with merge to create doc if it doesn't exist
+                await setDoc(userDocRef, { 
+                    fcmTokens: arrayUnion(currentToken) 
+                }, { merge: true });
 
-        if (currentToken) {
-          console.log('FCM Token:', currentToken);
-          const userDocRef = doc(db, 'users', user.uid);
-          
-          // Use setDoc with merge to create doc if it doesn't exist
-          await setDoc(userDocRef, { 
-              fcmTokens: arrayUnion(currentToken) 
-          }, { merge: true });
-
-          setIsTokenSaved(true);
-          toast({
-            title: "Notificações Ativadas!",
-            description: "Token salvo com sucesso.",
-          });
-
-        } else {
-          console.log('No registration token available. Request permission to generate one.');
-           toast({
-            variant: "destructive",
-            title: "Token não disponível",
-            description: "Não foi possível obter o token para notificações.",
-          });
+                setIsTokenSaved(true);
+                toast({
+                    title: "Notificações Ativadas!",
+                    description: "Token salvo com sucesso.",
+                });
+            } else {
+                toast({
+                    variant: "destructive",
+                    title: "Token não disponível",
+                    description: "Não foi possível obter o token para notificações.",
+                });
+            }
+        } catch (err) {
+            console.error('An error occurred while retrieving token. ', err);
+            toast({
+                variant: "destructive",
+                title: "Erro ao obter token",
+                description: "Não foi possível obter o token. Verifique as configurações do seu navegador.",
+            });
         }
       } else {
         toast({
@@ -112,26 +118,26 @@ export default function NotificationButton() {
   
   if (notificationStatus === 'granted' || isTokenSaved) {
       return (
-          <Button variant="outline" disabled>
-              <BellRing className="mr-2 text-green-500"/>
+          <div className="text-green-500 w-full text-left cursor-default">
+              <BellRing className="mr-2 text-green-500 inline-block"/>
               Notificações Ativas
-          </Button>
+          </div>
       );
   }
 
   if (notificationStatus === 'denied') {
       return (
-           <Button variant="outline" disabled>
-              <BellOff className="mr-2 text-destructive" />
+           <div className="text-destructive w-full text-left cursor-default">
+              <BellOff className="mr-2 text-destructive inline-block" />
               Notificações Bloqueadas
-          </Button>
+          </div>
       );
   }
 
   return (
-    <Button variant="outline" onClick={handleRequestPermission}>
-        <BellRing className="mr-2" />
+    <button className="w-full text-left" onClick={handleRequestPermission}>
+        <BellRing className="mr-2 inline-block" />
         Ativar Notificações
-    </Button>
+    </button>
   );
 }

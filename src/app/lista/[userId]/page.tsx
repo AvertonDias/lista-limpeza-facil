@@ -35,6 +35,7 @@ import {
   Loader2,
   Trash2,
   ShoppingCart,
+  Search,
 } from "lucide-react";
 import { Logo } from "@/components/icons/logo";
 import { CheckIcon } from "@/components/icons/check-icon";
@@ -59,6 +60,7 @@ export default function PublicListPage() {
   const [pageOwner, setPageOwner] = useState<UserData | null>(null);
   const [customItemName, setCustomItemName] = useState("");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const userId = params.userId as string;
 
@@ -213,6 +215,12 @@ export default function PublicListPage() {
 
   const shoppingListIds = useMemo(() => new Set(shoppingList.map(item => item.id)), [shoppingList]);
   
+  const filteredMaterials = useMemo(() => {
+    return materials.filter((material) =>
+      material.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [materials, searchQuery]);
+
   if (pageLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -289,8 +297,18 @@ export default function PublicListPage() {
                             Itens Disponíveis
                         </h1>
                     </div>
+                    <div className="relative mb-6">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input 
+                            type="text"
+                            placeholder="Pesquisar item..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10"
+                        />
+                    </div>
                      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-                        {materials.map((material) => {
+                        {filteredMaterials.map((material) => {
                             const isInList = shoppingListIds.has(material.id);
                             return (
                                 <Card
@@ -349,7 +367,7 @@ export default function PublicListPage() {
                     <SheetHeader className="p-6 pb-0">
                         <SheetTitle className="font-headline text-2xl">Lista de Compras</SheetTitle>
                     </SheetHeader>
-                    <div className="flex-1 overflow-y-auto py-4 px-6">
+                    <div className="flex-1 overflow-y-auto py-4 px-4">
                         {renderShoppingList()}
                     </div>
                     <SheetFooter className="p-6 pt-0">

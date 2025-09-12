@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
@@ -44,6 +44,7 @@ import {
   BookUser,
   Loader2,
   Edit,
+  Search,
 } from "lucide-react";
 import Header from "@/components/header";
 
@@ -57,6 +58,7 @@ export default function DashboardPage() {
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [newItemName, setNewItemName] = useState("");
   const [materialsLoading, setMaterialsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!loading && !user) {
@@ -216,6 +218,12 @@ export default function DashboardPage() {
      }
   }
 
+  const filteredMaterials = useMemo(() => {
+    return materials.filter((material) =>
+      material.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [materials, searchQuery]);
+
   if (loading || !user) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -281,13 +289,24 @@ export default function DashboardPage() {
               </div>
             </div>
 
+            <div className="relative mb-6">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input 
+                    type="text"
+                    placeholder="Pesquisar material..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10"
+                />
+            </div>
+
             {materialsLoading ? (
                  <div className="flex justify-center items-center h-64">
                     <Loader2 className="h-12 w-12 animate-spin text-primary" />
                  </div>
-            ) : materials.length > 0 ? (
+            ) : filteredMaterials.length > 0 ? (
                 <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {materials.map((material) => (
+                {filteredMaterials.map((material) => (
                     <Card
                     key={material.id}
                     className="flex flex-col overflow-hidden transition-shadow hover:shadow-lg group cursor-pointer"
@@ -311,8 +330,8 @@ export default function DashboardPage() {
                 </div>
             ) : (
                 <div className="text-center text-muted-foreground py-16">
-                    <p className="text-lg">Nenhum item cadastrado.</p>
-                    <p>Clique em "Adicionar Item" para começar.</p>
+                    <p className="text-lg">{searchQuery ? "Nenhum item encontrado." : "Nenhum item cadastrado."}</p>
+                    <p>{searchQuery ? "Tente uma busca diferente." : "Clique em 'Adicionar Item' para começar."}</p>
                 </div>
             )}
           </div>

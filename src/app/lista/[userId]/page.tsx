@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -335,8 +334,8 @@ export default function PublicListPage() {
 
   return (
      <div className="flex min-h-screen w-full flex-col">
-       <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 px-4 md:px-6 justify-between">
-            <div className="flex items-center gap-2">
+       <header className="sticky top-0 z-30 flex flex-col md:flex-row items-center gap-4 border-b bg-background/95 p-4 md:h-16 md:px-6 md:justify-between">
+            <div className="flex items-center self-start gap-2">
                 <div className="h-8 w-8">
                     <Logo />
                 </div>
@@ -351,7 +350,7 @@ export default function PublicListPage() {
                 }
             }}>
                 <DialogTrigger asChild>
-                    <Button variant="outline">
+                    <Button className="w-full md:w-auto">
                         <MessageSquarePlus className="mr-2 h-4 w-4" />
                         Sugestões ou Dúvidas
                     </Button>

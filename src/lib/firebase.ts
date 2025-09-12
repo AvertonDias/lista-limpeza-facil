@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, createUserWithEmailAndPassword } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getMessaging } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
@@ -17,5 +18,9 @@ const auth = getAuth(app);
 // Explicitly set the database ID to match the region.
 const db = getFirestore(app, '(default)');
 
-export { app, auth, db, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword };
+// Get a messaging instance
+const messaging = (typeof window !== 'undefined') ? getMessaging(app) : null;
+
+
+export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword };
 export type { User };

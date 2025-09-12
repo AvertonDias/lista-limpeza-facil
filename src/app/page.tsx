@@ -66,6 +66,7 @@ import {
 import Header from "@/components/header";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import NotificationButton from "@/components/notification-button";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -315,6 +316,7 @@ export default function DashboardPage() {
                   Materiais de Limpeza
                 </h1>
                 <div className="flex gap-2">
+                  <NotificationButton />
                   <Button onClick={handleSharePublicList} variant="outline">
                       <BookUser className="mr-2" />
                       Compartilhar Materiais
@@ -528,5 +530,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

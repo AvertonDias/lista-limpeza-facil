@@ -56,6 +56,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { sendNotification } from '@/lib/fcm';
+
 
 interface UserData {
     displayName?: string;
@@ -180,7 +182,7 @@ export default function PublicListPage() {
     await setDoc(shoppingListDocRef, { items: newList, userId: userId }, { merge: true });
   }
   
-  const handleToggleItemInShoppingList = (item: Material) => {
+  const handleToggleItemInShoppingList = async (item: Material) => {
     const updatedList = [...shoppingList];
     const existingItemIndex = updatedList.findIndex((i) => i.id === item.id);
     
@@ -192,15 +194,18 @@ export default function PublicListPage() {
 
     } else {
        updatedList.push({ id: item.id, name: item.name });
-        updateShoppingListInFirestore(updatedList);
+        await updateShoppingListInFirestore(updatedList);
         toast({
         title: "Item Adicionado!",
         description: `${item.name} foi adicionado à lista de compras.`,
         });
+        
+        // Send notification
+        await sendNotification(userId, 'Novo Item na Lista!', `O item "${item.name}" foi adicionado à sua lista.`);
     }
   };
 
-  const handleAddCustomItem = () => {
+  const handleAddCustomItem = async () => {
     if (!customItemName.trim()) {
       toast({
         variant: "destructive",
@@ -214,17 +219,21 @@ export default function PublicListPage() {
       name: customItemName.trim(),
     };
     const updatedList = [...shoppingList, newItem];
-    updateShoppingListInFirestore(updatedList);
+    await updateShoppingListInFirestore(updatedList);
     toast({
       title: "Item Adicionado!",
       description: `${newItem.name} foi adicionado à lista.`,
     });
+
+    // Send notification
+    await sendNotification(userId, 'Novo Item na Lista!', `O item "${newItem.name}" (avulso) foi adicionado à sua lista.`);
+
     setCustomItemName("");
   };
 
-  const handleRemoveItemFromShoppingList = (itemId: string) => {
+  const handleRemoveItemFromShoppingList = async (itemId: string) => {
     const updatedList = shoppingList.filter((i) => i.id !== itemId);
-    updateShoppingListInFirestore(updatedList);
+    await updateShoppingListInFirestore(updatedList);
   };
   
   const handleFeedbackSubmit = async () => {
@@ -251,6 +260,12 @@ export default function PublicListPage() {
         title: "Mensagem Enviada!",
         description: "Obrigado pelo seu feedback.",
       });
+
+      // Send notification
+      const notificationTitle = feedbackType === 'doubt' ? `Nova Dúvida de ${feedbackName}` : 'Nova Sugestão Recebida';
+      const notificationBody = feedbackText.substring(0, 100) + (feedbackText.length > 100 ? '...' : '');
+      await sendNotification(userId, notificationTitle, notificationBody);
+
       setIsFeedbackModalOpen(false);
       setFeedbackType(null);
       setFeedbackName("");
@@ -334,12 +349,17 @@ export default function PublicListPage() {
 
   return (
      <div className="flex min-h-screen w-full flex-col">
-       <header className="sticky top-0 z-30 flex flex-col md:flex-row items-center gap-4 border-b bg-background/95 p-4 md:h-16 md:px-6 md:justify-between">
-            <div className="flex items-center self-start gap-2">
-                <div className="h-8 w-8">
-                    <Logo />
+       <header className="sticky top-0 z-30 flex flex-col gap-4 border-b bg-background/95 p-4 md:px-6">
+            <div className="flex items-center justify-between self-start gap-2 w-full">
+                <div className="flex items-center gap-2">
+                    <div className="h-8 w-8">
+                        <Logo />
+                    </div>
+                    <span className="font-headline text-xl font-semibold">Lista de Limpeza Fácil</span>
                 </div>
-                <span className="font-headline text-xl font-semibold">Lista de Limpeza Fácil</span>
+                <div className="md:hidden">
+                    {/* Placeholder for potential mobile-only actions */}
+                </div>
             </div>
             <Dialog open={isFeedbackModalOpen} onOpenChange={(isOpen) => {
                 setIsFeedbackModalOpen(isOpen);
@@ -350,7 +370,7 @@ export default function PublicListPage() {
                 }
             }}>
                 <DialogTrigger asChild>
-                    <Button className="w-full md:w-auto">
+                    <Button className="w-full">
                         <MessageSquarePlus className="mr-2 h-4 w-4" />
                         Sugestões ou Dúvidas
                     </Button>

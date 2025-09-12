@@ -1,9 +1,9 @@
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, createUserWithEmailAndPassword, UserCredential } from "firebase/auth";
 import { getFirestore, arrayRemove, arrayUnion } from "firebase/firestore";
 import { getMessaging, getToken, deleteToken } from "firebase/messaging";
 
-export const firebaseConfig = {
+export const firebaseConfig: FirebaseOptions = {
   apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
   authDomain: "studio-1326322560-ad791.firebaseapp.com",
   projectId: "studio-1326322560-ad791",

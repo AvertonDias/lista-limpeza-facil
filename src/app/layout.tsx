@@ -8,8 +8,8 @@ export const metadata: Metadata = {
   description: "Gerencie sua lista de compras de limpeza de forma fácil e organizada.",
   manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/images/placeholder-icon.png",
-    apple: "/images/placeholder-icon.png",
+    icon: "/images/placeholder-icon.png?v=2",
+    apple: "/images/placeholder-icon.png?v=2",
   },
 };
 

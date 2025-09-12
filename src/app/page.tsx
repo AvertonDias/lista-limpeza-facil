@@ -38,6 +38,14 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetFooter
+} from "@/components/ui/sheet";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -62,10 +70,12 @@ import {
   Search,
   MessageSquare,
   Lightbulb,
+  ShoppingCart,
 } from "lucide-react";
 import Header from "@/components/header";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -75,6 +85,7 @@ export default function DashboardPage() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
   const [newItemName, setNewItemName] = useState("");
   const [materialsLoading, setMaterialsLoading] = useState(true);
@@ -303,10 +314,46 @@ export default function DashboardPage() {
     return formatDistanceToNow(timestamp.toDate(), { addSuffix: true, locale: ptBR });
   }
 
+  const renderShoppingList = () => (
+    <>
+    {shoppingList.length > 0 ? (
+      <div className="space-y-4">
+        <ul className="space-y-3">
+          {shoppingList.map((item) => (
+            <li
+              key={item.id}
+              className="flex items-center justify-between"
+            >
+              <div>
+                <p className="font-medium">{item.name}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleRemoveItemFromShoppingList(item.id)}
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </li>
+          ))}
+        </ul>
+        <Separator />
+      </div>
+    ) : (
+      <div className="text-center text-muted-foreground py-8">
+        <p>Sua lista de compras está vazia.</p>
+        <p className="text-sm">
+          Clique nos itens para adicionar.
+        </p>
+      </div>
+    )}
+    </>
+  );
+
   return (
     <div className="flex min-h-screen w-full flex-col">
       <Header />
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-24">
         <div className="grid gap-8 md:grid-cols-3">
           <div className="md:col-span-2 space-y-8">
            <div>
@@ -482,7 +529,7 @@ export default function DashboardPage() {
             </div>
 
           </div>
-          <div className="md:col-span-1">
+          <div className="hidden md:block md:col-span-1">
             <Card className="sticky top-24">
               <CardHeader>
                 <CardTitle className="font-headline text-2xl">
@@ -490,42 +537,40 @@ export default function DashboardPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {shoppingList.length > 0 ? (
-                  <div className="space-y-4">
-                    <ul className="space-y-3">
-                      {shoppingList.map((item) => (
-                        <li
-                          key={item.id}
-                          className="flex items-center justify-between"
-                        >
-                          <div>
-                            <p className="font-medium">{item.name}</p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleRemoveItemFromShoppingList(item.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </li>
-                      ))}
-                    </ul>
-                    <Separator />
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground py-8">
-                    <p>Sua lista de compras está vazia.</p>
-                    <p className="text-sm">
-                      Clique nos itens para adicionar.
-                    </p>
-                  </div>
-                )}
+                {renderShoppingList()}
               </CardContent>
             </Card>
           </div>
         </div>
       </main>
+      
+      {/* Mobile Sheet and FAB */}
+      <div className="md:hidden">
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                <SheetTrigger asChild>
+                     <Button className="fixed bottom-6 right-6 z-40 h-16 w-16 rounded-full shadow-lg">
+                        <ShoppingCart className="h-6 w-6" />
+                        {shoppingList.length > 0 && (
+                            <Badge variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 justify-center rounded-full">
+                                {shoppingList.length}
+                            </Badge>
+                        )}
+                        <span className="sr-only">Abrir lista de compras</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[90%] flex flex-col p-0">
+                    <SheetHeader className="p-6 pb-0">
+                        <SheetTitle className="font-headline text-2xl">Lista de Compras</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto py-4 px-4">
+                        {renderShoppingList()}
+                    </div>
+                    <SheetFooter className="p-6 pt-0">
+                        <Button onClick={() => setIsSheetOpen(false)} className="w-full">Fechar</Button>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
+        </div>
     </div>
   );
 }

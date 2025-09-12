@@ -275,7 +275,7 @@ export default function PublicListPage() {
                 <span className="font-headline text-xl font-semibold">Lista de {pageOwner?.displayName || 'Compras'}</span>
             </div>
         </header>
-       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-24 lg:pb-8">
         {error ? (
              <div className="text-center text-destructive py-16">{error}</div>
         ) : (

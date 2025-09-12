@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { BellRing, BellOff, Loader2 } from 'lucide-react';
 
-const FCM_VAPID_KEY = 'AAAA_s3mXlM:APA91bF9R1gYV_zK8w7B5J7s2Z_4hQ6K2h-Y6e7Z_3J_rJ5c5d0jF1o3X8zY6yX6f0z5k_tH7j7r_X1i9w_Z5f3k_2w_x_9c_V0e_B7n_N6o_C1p_T4t_R_S_Q_W_E_Y_U';
+const FCM_VAPID_KEY = 'BGPAu-EMBx9dG68-A3g5iN9X8zY6_t5k_jR9w_Z5f3k_2w_x_9c_V0e_B7n_N6o_C1p_T4t_R_S_Q_W_E_Y_U';
 
 export default function NotificationButton() {
   const { user } = useAuth();
@@ -156,7 +156,7 @@ export default function NotificationButton() {
   
   if (isProcessing) {
      return (
-           <div className="flex items-center justify-center w-full text-left cursor-default">
+           <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none">
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Processando...
           </div>
@@ -165,7 +165,7 @@ export default function NotificationButton() {
 
   if (notificationStatus === 'granted' || isTokenSaved) {
       return (
-          <button className="w-full text-left" onClick={handleDisableNotifications}>
+          <button className="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50" onClick={handleDisableNotifications}>
               <BellOff className="mr-2 text-destructive inline-block"/>
               Desativar Notificações
           </button>
@@ -174,7 +174,7 @@ export default function NotificationButton() {
 
   if (notificationStatus === 'denied') {
       return (
-           <div className="text-destructive w-full text-left cursor-default flex items-center">
+           <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive outline-none">
               <BellOff className="mr-2 text-destructive inline-block" />
               Notificações Bloqueadas
           </div>
@@ -182,7 +182,7 @@ export default function NotificationButton() {
   }
 
   return (
-    <button className="w-full text-left flex items-center" onClick={handleRequestPermission}>
+    <button className="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50" onClick={handleRequestPermission}>
         <BellRing className="mr-2 inline-block" />
         Ativar Notificações
     </button>

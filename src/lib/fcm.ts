@@ -60,6 +60,20 @@ export async function sendNotification(userId: string, title: string, body: stri
       return { success: true, response: responseData };
     } else {
       console.error('Error sending message:', responseData);
+      // Clean up invalid tokens
+      if (responseData.results) {
+        const tokensToRemove: string[] = [];
+        responseData.results.forEach((result: any, index: number) => {
+            if (result.error === 'NotRegistered' || result.error === 'InvalidRegistration') {
+                tokensToRemove.push(tokens[index]);
+            }
+        });
+        if (tokensToRemove.length > 0) {
+            console.log("Removing invalid tokens:", tokensToRemove);
+            // This is a fire-and-forget operation, no need to await
+            setDoc(userDocRef, { fcmTokens: arrayRemove(...tokensToRemove) }, { merge: true });
+        }
+      }
       return { success: false, error: responseData };
     }
 

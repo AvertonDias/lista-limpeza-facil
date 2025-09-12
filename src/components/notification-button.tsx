@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { getToken, deleteToken } from 'firebase/messaging';
-import { doc, updateDoc, arrayUnion, onSnapshot, setDoc, getDoc, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { messaging, db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { BellRing, BellOff, Loader2 } from 'lucide-react';
-import { firebaseConfig } from '@/lib/firebase';
 
+// This is the VAPID key from the Firebase console (Project settings > Cloud Messaging > Web configuration)
 const FCM_VAPID_KEY = "BGPAu-EMBx9dG68-A3g5iN9X8zY6_t5k_jR9w_Z5f3k_2w_x_9c_V0e_B7n_N6o_C1p_T4t_R_S_Q_W_E_Y_U";
 
 export default function NotificationButton() {

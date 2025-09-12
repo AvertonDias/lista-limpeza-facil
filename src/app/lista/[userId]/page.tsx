@@ -283,7 +283,7 @@ export default function PublicListPage() {
                 <div className="h-8 w-8">
                     <Logo />
                 </div>
-                <span className="font-headline text-xl font-semibold">Lista de {pageOwner?.displayName || 'Compras'}</span>
+                <span className="font-headline text-xl font-semibold">Lista de Limpeza Fácil</span>
             </div>
         </header>
        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-24">

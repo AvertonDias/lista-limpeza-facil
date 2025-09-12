@@ -216,10 +216,12 @@ export default function PublicListPage() {
   const shoppingListIds = useMemo(() => new Set(shoppingList.map(item => item.id)), [shoppingList]);
   
   const filteredMaterials = useMemo(() => {
-    return materials.filter((material) =>
-      material.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [materials, searchQuery]);
+    return materials
+      .filter((material) => !shoppingListIds.has(material.id))
+      .filter((material) =>
+        material.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+  }, [materials, searchQuery, shoppingListIds]);
 
   if (pageLoading) {
     return (

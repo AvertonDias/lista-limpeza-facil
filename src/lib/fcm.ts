@@ -2,72 +2,73 @@
 
 import admin from 'firebase-admin';
 
-// Inicializa Firebase Admin apenas uma vez
+// Inicializa Firebase Admin SDK apenas uma vez
 if (!admin.apps.length) {
   try {
+    const serviceAccount = require('../../../serviceAccountKey.json');
     admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
+      credential: admin.credential.cert(serviceAccount),
     });
-    console.log("Firebase Admin SDK inicializado com sucesso.");
   } catch (error) {
     console.error(
-      "Falha ao inicializar o Firebase Admin SDK. Verifique suas variáveis de ambiente.",
+      "Falha ao inicializar o Firebase Admin SDK. Verifique se o arquivo `serviceAccountKey.json` existe na raiz do projeto.",
       error
     );
   }
 }
 
-interface UserData {
-    fcmTokens?: string[];
-    displayName?: string;
-    email?: string;
+// Acessa o Firestore pelo Admin SDK
+const dbAdmin = admin.firestore();
+
+interface SendNotificationResult {
+  success: boolean;
+  count?: number;
+  removed?: string[];
+  error?: string;
 }
 
-export async function sendNotification(userId: string, title: string, body: string, data?: Record<string, string>) {
+/**
+ * Envia uma notificação push via Firebase Cloud Messaging para o usuário especificado.
+ */
+export async function sendNotification(
+  userId: string,
+  title: string,
+  body: string
+): Promise<SendNotificationResult> {
   if (!admin.apps.length) {
-    console.error("Firebase Admin SDK não inicializado.");
     return { success: false, error: "Admin SDK não inicializado" };
   }
 
-  const adminFirestore = admin.firestore();
-
   try {
-    const userDocRef = adminFirestore.collection('users').doc(userId);
+    const userDocRef = dbAdmin.collection('users').doc(userId);
     const userDoc = await userDocRef.get();
 
     if (!userDoc.exists) {
-      console.error('Usuário não encontrado:', userId);
       return { success: false, error: 'Usuário não encontrado' };
     }
-    
-    const userData = userDoc.data() as UserData;
-    const tokens = userData.fcmTokens;
 
-    if (!tokens || tokens.length === 0) {
-      console.log('Nenhum token FCM para o usuário:', userId);
-      return { success: false, error: 'Nenhum token encontrado' };
+    const userData = userDoc.data() as { fcmTokens?: string[] };
+    const tokens = userData.fcmTokens || [];
+
+    if (tokens.length === 0) {
+      return { success: false, error: 'Nenhum token FCM encontrado para o usuário' };
     }
 
     const tokensToRemove: string[] = [];
     const successfulSends: string[] = [];
 
+    // Envia notificações para todos os tokens
     await Promise.all(
       tokens.map(async (token) => {
         const message: admin.messaging.Message = {
           token,
           notification: { title, body },
-          data: data || {},
           webpush: {
-            fcmOptions: {
-              link: data?.click_action || '/', // página que abre ao clicar
-            },
             notification: {
               icon: '/images/placeholder-icon.png?v=2',
-              tag: new Date().getTime().toString(), // evita duplicação
+            },
+            fcmOptions: {
+              link: '/', // URL absoluta ou relativa do seu app
             },
           },
         };
@@ -76,30 +77,31 @@ export async function sendNotification(userId: string, title: string, body: stri
           const response = await admin.messaging().send(message);
           successfulSends.push(response);
         } catch (error: any) {
+          console.error('Erro ao enviar notificação:', error.code, error.message);
           if (
             error.code === 'messaging/invalid-registration-token' ||
             error.code === 'messaging/registration-token-not-registered'
           ) {
             tokensToRemove.push(token);
-          } else {
-            console.error('Falha ao enviar para o token:', token, error);
           }
         }
       })
     );
 
-    // Remove tokens inválidos
+    // Remove tokens inválidos do Firestore
     if (tokensToRemove.length > 0) {
-      console.log("Removendo tokens inválidos:", tokensToRemove);
-      const { FieldValue } = await import('firebase-admin/firestore');
-      await userDocRef.update({ 
-          fcmTokens: FieldValue.arrayRemove(...tokensToRemove) 
+      await userDocRef.update({
+        fcmTokens: admin.firestore.FieldValue.arrayRemove(...tokensToRemove),
       });
     }
 
-    return { success: successfulSends.length > 0, count: successfulSends.length, removed: tokensToRemove };
+    if (successfulSends.length > 0) {
+      return { success: true, count: successfulSends.length, removed: tokensToRemove };
+    } else {
+      return { success: false, error: 'Nenhuma mensagem pôde ser enviada' };
+    }
   } catch (error: any) {
-    console.error('Erro ao enviar mensagem FCM:', error);
-    return { success: false, error: error.code || (error as Error).message };
+    console.error('Erro ao enviar notificações FCM:', error);
+    return { success: false, error: error.message };
   }
 }

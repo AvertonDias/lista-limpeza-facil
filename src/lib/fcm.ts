@@ -1,22 +1,8 @@
 'use server';
 
-import { doc, getDoc, setDoc, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import admin from 'firebase-admin';
-
-// Inicializa Firebase Admin apenas uma vez.
-// CRÍTICO: Crie um arquivo `serviceAccountKey.json` na raiz do seu projeto
-// com as credenciais da sua conta de serviço do Firebase.
-if (!admin.apps.length) {
-  try {
-    const serviceAccount = require('../../../serviceAccountKey.json');
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
-  } catch (error) {
-    console.error("Falha ao inicializar o Firebase Admin SDK. Verifique se o arquivo `serviceAccountKey.json` existe na raiz do projeto.", error);
-  }
-}
+import { admin } from '@/lib/firebaseAdmin';
 
 interface UserData {
     fcmTokens?: string[];
@@ -25,11 +11,6 @@ interface UserData {
 }
 
 export async function sendNotification(userId: string, title: string, body: string) {
-  if (!admin.apps.length) {
-    console.error("Firebase Admin SDK não inicializado. Não é possível enviar notificações.");
-    return { success: false, error: "Admin SDK não inicializado" };
-  }
-  
   try {
     const userDocRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userDocRef);
@@ -47,56 +28,52 @@ export async function sendNotification(userId: string, title: string, body: stri
       return { success: false, error: 'Nenhum token encontrado' };
     }
     
-    const tokensToRemove: string[] = [];
-    const successfulSends: string[] = [];
-    
-    await Promise.all(
-        tokens.map(async (token) => {
-            const message: admin.messaging.Message = {
-                token: token,
-                notification: {
-                    title,
-                    body,
-                },
-                webpush: {
-                    notification: {
-                        icon: '/images/placeholder-icon.png?v=2',
-                    },
-                    fcm_options: {
-                        link: 'https://lista-limpeza-facil.web.app/', // Usar URL absoluta
-                    }
-                }
-            };
-            
-            try {
-                const response = await admin.messaging().send(message);
-                successfulSends.push(response);
-            } catch (error: any) {
-                 console.error('Erro ao enviar notificação:', error.code, error.message);
-                 if (
-                    error.code === 'messaging/invalid-registration-token' ||
-                    error.code === 'messaging/registration-token-not-registered'
-                 ) {
-                    tokensToRemove.push(token);
-                 }
+    const message = {
+        tokens: tokens,
+        notification: {
+            title,
+            body,
+        },
+        webpush: {
+            notification: {
+                icon: '/images/placeholder-icon.png?v=2',
+            },
+            fcm_options: {
+                link: 'https://lista-limpeza-facil.web.app/', // URL Absoluta
             }
-        })
-    );
+        }
+    };
 
-    // Limpa tokens inválidos do Firestore
+    const response = await admin.messaging().sendMulticast(message);
+    const tokensToRemove: string[] = [];
+
+    response.responses.forEach((result, index) => {
+        if (!result.success) {
+            console.error('Falha ao enviar para o token:', tokens[index], result.error);
+             if (
+                result.error.code === 'messaging/invalid-registration-token' ||
+                result.error.code === 'messaging/registration-token-not-registered'
+             ) {
+                tokensToRemove.push(tokens[index]);
+             }
+        }
+    });
+
     if (tokensToRemove.length > 0) {
         console.log("Removendo tokens inválidos:", tokensToRemove);
-        await setDoc(userDocRef, { fcmTokens: arrayRemove(...tokensToRemove) }, { merge: true });
+        await updateDoc(userDocRef, { 
+            fcmTokens: arrayRemove(...tokensToRemove) 
+        });
     }
 
-    if (successfulSends.length > 0) {
-         return { success: true, count: successfulSends.length, removed: tokensToRemove };
+    if (response.successCount > 0) {
+         return { success: true, count: response.successCount, removed: tokensToRemove };
     } else {
-         return { success: false, error: "Nenhuma mensagem pôde ser enviada." };
+         return { success: false, error: "Nenhuma mensagem pôde ser enviada.", removed: tokensToRemove };
     }
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Erro ao enviar mensagem FCM:', error);
-    return { success: false, error: (error as Error).message };
+    return { success: false, error: error.code || (error as Error).message };
   }
 }

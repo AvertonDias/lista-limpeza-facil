@@ -74,7 +74,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import Header from "@/components/header";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 
@@ -322,7 +322,7 @@ export default function DashboardPage() {
 
   const formatFeedbackDate = (timestamp: Timestamp | null) => {
     if (!timestamp) return "Data desconhecida";
-    return formatDistanceToNow(timestamp.toDate(), { addSuffix: true, locale: ptBR });
+    return format(timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
   }
 
   const renderShoppingList = () => (
@@ -532,7 +532,7 @@ export default function DashboardPage() {
                                 </CardHeader>
                                 <CardContent>
                                     <p className="text-sm text-foreground">{item.text}</p>
-                                </CardContent>
+                                 </CardContent>
                             </Card>
                         ))}
                     </div>
@@ -590,3 +590,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

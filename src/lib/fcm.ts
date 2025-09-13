@@ -4,6 +4,8 @@ import { admin, db, messaging } from './firebaseAdmin';
 
 export async function sendNotification(userId: string, title: string, body: string) {
   if (!admin.apps.length) {
+    // This check might be redundant if the admin initialization is solid, but good for safety.
+    console.error("ERRO: Admin SDK não inicializado antes de chamar sendNotification.");
     return { success: false, error: 'Admin SDK não inicializado.' };
   }
 
@@ -18,19 +20,31 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     const tokens = userDoc.data()?.fcmTokens || [];
     if (tokens.length === 0) {
-      return { success: false, error: 'Nenhum token encontrado' };
+      return { success: false, error: 'Nenhum token encontrado para notificações.' };
     }
 
     const invalidTokens: string[] = [];
     const successes: string[] = [];
 
+    // The icon must be a public URL
+    const iconUrl = 'https://lista-de-limpeza-facil.vercel.app/images/placeholder-icon.png';
+
     const notifications = tokens.map((token: string) => {
       const msg: admin.messaging.Message = {
         token,
-        notification: { title, body },
+        notification: { 
+          title, 
+          body,
+          image: iconUrl, // Use 'image' for the main icon in the notification body
+        },
         webpush: {
-          notification: { icon: '/images/placeholder-icon.png' },
-          fcmOptions: { link: 'https://lista-de-limpeza-facil.vercel.app/' },
+          notification: { 
+            icon: iconUrl, // Use 'icon' for the small icon
+          },
+          fcmOptions: { 
+            // The link should be the root of your app to handle navigation correctly
+            link: 'https://lista-de-limpeza-facil.vercel.app/' 
+          },
         },
       };
       return messaging.send(msg).then((res) => {

@@ -1,8 +1,10 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from "react";
-import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging } from "@/lib/firebase";
-import { getToken } from "firebase/messaging";
+import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db } from "@/lib/firebase";
+import { getToken, onMessage } from "firebase/messaging";
+import { doc, setDoc, arrayUnion } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
   user: User | null;
@@ -17,30 +19,62 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+  const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
+      if (user) {
+        // Request notification permission and save token when user logs in
+        requestPermissionAndSaveToken(user);
+      }
     });
-
-    // Initialize messaging and get token, this helps ensure the service worker is registered.
-    const initializeMessaging = async () => {
-        if (typeof window !== "undefined" && "serviceWorker" in navigator && messaging) {
-            try {
-                // We don't need to do anything with the token here, just get it to ensure registration.
-                await getToken(messaging);
-            } catch (error) {
-                // This can fail if permission is not granted, which is fine.
-                // We're just trying to initialize it.
-                console.log("FCM Service Worker registration check finished.");
-            }
-        }
-    };
-    initializeMessaging();
     
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      if (messaging) {
+        // Handle foreground messages
+        const unsubscribeOnMessage = onMessage(messaging, (payload) => {
+          console.log("Foreground message received.", payload);
+          toast({
+            title: payload.notification?.title,
+            description: payload.notification?.body,
+          });
+        });
+        return () => unsubscribeOnMessage();
+      }
+    }
+  }, [toast]);
+
+  const requestPermissionAndSaveToken = async (currentUser: User) => {
+    if (!messaging || !vapidKey || !currentUser) return;
+
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        const currentToken = await getToken(messaging, { vapidKey });
+        if (currentToken) {
+          console.log('FCM Token:', currentToken);
+          const userDocRef = doc(db, 'users', currentUser.uid);
+          // Set with merge to avoid overwriting other user data
+          await setDoc(userDocRef, { 
+            fcmTokens: arrayUnion(currentToken) 
+          }, { merge: true });
+        } else {
+          console.log('No registration token available. Request permission to generate one.');
+        }
+      } else {
+        console.log('Unable to get permission to notify.');
+      }
+    } catch (error) {
+      console.error('An error occurred while retrieving token. ', error);
+    }
+  };
   
   const login = (email: string, pass: string) => {
     return signInWithEmailAndPassword(auth, email, pass);

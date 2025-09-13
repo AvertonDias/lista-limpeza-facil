@@ -11,6 +11,13 @@ interface UserData {
 }
 
 export async function sendNotification(userId: string, title: string, body: string) {
+  if (!admin.apps.length) {
+    console.error(
+      "Firebase Admin SDK não inicializado. Não é possível enviar notificações."
+    );
+    return { success: false, error: "Admin SDK não inicializado" };
+  }
+
   try {
     const userDocRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userDocRef);
@@ -39,7 +46,7 @@ export async function sendNotification(userId: string, title: string, body: stri
                 icon: '/images/placeholder-icon.png?v=2',
             },
             fcm_options: {
-                link: 'https://lista-limpeza-facil.web.app/', // URL Absoluta
+                link: 'https://lista-limpeza-facil.web.app/',
             }
         }
     };

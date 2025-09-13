@@ -18,8 +18,8 @@ export default function NotificationButton() {
   const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window && user && messaging) {
-      const checkStatus = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window && user && messaging && vapidKey) {
+      const checkAndRefreshToken = async () => {
         setIsProcessing(true);
         const currentPermission = Notification.permission;
         setNotificationStatus(currentPermission);
@@ -30,11 +30,15 @@ export default function NotificationButton() {
             if (currentToken) {
               const userDocRef = doc(db, 'users', user.uid);
               const userDoc = await getDoc(userDocRef);
-              if (userDoc.exists() && userDoc.data().fcmTokens?.includes(currentToken)) {
-                setIsTokenSaved(true);
-              } else {
-                setIsTokenSaved(false);
+              
+              // Ensure token is saved on load if permission is granted
+              if (!userDoc.exists() || !userDoc.data().fcmTokens?.includes(currentToken)) {
+                 await setDoc(userDocRef, { fcmTokens: arrayUnion(currentToken) }, { merge: true });
               }
+              setIsTokenSaved(true);
+
+            } else {
+              setIsTokenSaved(false);
             }
           } catch (err) {
             console.error('An error occurred while retrieving token for check. ', err);
@@ -45,7 +49,7 @@ export default function NotificationButton() {
         }
         setIsProcessing(false);
       };
-      checkStatus();
+      checkAndRefreshToken();
     } else {
         setIsProcessing(false);
     }

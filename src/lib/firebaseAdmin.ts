@@ -1,4 +1,3 @@
-'use server';
 import admin from 'firebase-admin';
 
 // Inicializa Firebase Admin apenas uma vez com variáveis de ambiente

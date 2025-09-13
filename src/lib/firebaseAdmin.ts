@@ -1,3 +1,4 @@
+'use server';
 import admin from 'firebase-admin';
 
 // Inicializa Firebase Admin apenas uma vez com variáveis de ambiente
@@ -19,4 +20,7 @@ if (!admin.apps.length) {
   }
 }
 
-export { admin };
+const db = admin.firestore();
+const messaging = admin.messaging();
+
+export { admin, db, messaging };

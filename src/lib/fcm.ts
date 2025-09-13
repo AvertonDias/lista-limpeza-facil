@@ -1,50 +1,68 @@
 'use server';
-import admin from 'firebase-admin';
-import { doc, getDoc, setDoc, arrayRemove } from 'firebase/firestore';
-import { db } from './firebase';
 
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
+import { admin, db, messaging } from './firebaseAdmin';
 
 export async function sendNotification(userId: string, title: string, body: string) {
-  const userDocRef = doc(db, 'users', userId);
-  const userDoc = await getDoc(userDocRef);
+  if (!admin.apps.length) {
+    return { success: false, error: 'Admin SDK não inicializado.' };
+  }
 
-  if (!userDoc.exists()) return { success: false, error: 'Usuário não encontrado' };
-  const tokens = userDoc.data()?.fcmTokens || [];
+  const userDocRef = db.collection('users').doc(userId);
 
-  const invalidTokens: string[] = [];
-  const successes: string[] = [];
+  try {
+    const userDoc = await userDocRef.get();
 
-  await Promise.all(tokens.map(async (token: string) => {
-    try {
+    if (!userDoc.exists) {
+      return { success: false, error: 'Usuário não encontrado' };
+    }
+
+    const tokens = userDoc.data()?.fcmTokens || [];
+    if (tokens.length === 0) {
+      return { success: false, error: 'Nenhum token encontrado' };
+    }
+
+    const invalidTokens: string[] = [];
+    const successes: string[] = [];
+
+    const notifications = tokens.map((token: string) => {
       const msg: admin.messaging.Message = {
         token,
         notification: { title, body },
         webpush: {
           notification: { icon: '/images/placeholder-icon.png' },
-          fcmOptions: { link: '/' }
-        }
+          fcmOptions: { link: '/' },
+        },
       };
-      const res = await admin.messaging().send(msg);
-      successes.push(res);
-    } catch (e: any) {
-      if (['messaging/invalid-registration-token','messaging/registration-token-not-registered'].includes(e.code)) {
-        invalidTokens.push(token);
-      }
+      return messaging.send(msg).then((res) => {
+        successes.push(res);
+      }).catch((e: any) => {
+        if (
+          e.code === 'messaging/invalid-registration-token' ||
+          e.code === 'messaging/registration-token-not-registered'
+        ) {
+          invalidTokens.push(token);
+        } else {
+           // Log other errors for debugging
+           console.error(`Falha ao enviar para o token ${token}:`, e);
+        }
+      });
+    });
+
+    await Promise.all(notifications);
+
+    if (invalidTokens.length > 0) {
+      await userDocRef.update({
+        fcmTokens: admin.firestore.FieldValue.arrayRemove(...invalidTokens),
+      });
     }
-  }));
 
-  if (invalidTokens.length > 0) {
-    await setDoc(userDocRef, { fcmTokens: arrayRemove(...invalidTokens) }, { merge: true });
+    return {
+      success: successes.length > 0,
+      sent: successes.length,
+      removed: invalidTokens.length,
+    };
+  } catch (error) {
+     console.error("Erro geral em sendNotification:", error);
+     return { success: false, error: (error as Error).message };
   }
-
-  return { success: successes.length > 0, sent: successes.length, removed: invalidTokens.length };
 }

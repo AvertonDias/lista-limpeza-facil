@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getToken, deleteToken } from 'firebase/messaging';
+import { getToken, deleteToken, onMessage } from 'firebase/messaging';
 import { doc, getDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { messaging, db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -17,121 +17,125 @@ export default function NotificationButton() {
 
   const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'Notification' in window && user && messaging && vapidKey) {
-      const checkAndRefreshToken = async () => {
-        setIsProcessing(true);
-        const currentPermission = Notification.permission;
-        setNotificationStatus(currentPermission);
+  // Função para sincronizar o token do dispositivo
+  const syncToken = async () => {
+    if (!user || !messaging || !vapidKey) return;
 
-        if (currentPermission === 'granted') {
-          try {
-            const currentToken = await getToken(messaging, { vapidKey });
-            if (currentToken) {
-              const userDocRef = doc(db, 'users', user.uid);
-              const userDoc = await getDoc(userDocRef);
-              
-              // Ensure token is saved on load if permission is granted
-              if (!userDoc.exists() || !userDoc.data().fcmTokens?.includes(currentToken)) {
-                 await setDoc(userDocRef, { fcmTokens: arrayUnion(currentToken) }, { merge: true });
-              }
-              setIsTokenSaved(true);
+    try {
+      const currentToken = await getToken(messaging, { vapidKey });
+      if (!currentToken) return;
 
-            } else {
-              setIsTokenSaved(false);
-            }
-          } catch (err) {
-            console.error('An error occurred while retrieving token for check. ', err);
-            setIsTokenSaved(false);
-          }
-        } else {
-          setIsTokenSaved(false);
-        }
-        setIsProcessing(false);
-      };
-      checkAndRefreshToken();
-    } else {
-        setIsProcessing(false);
+      const userDocRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      const savedTokens = userDoc.exists() ? userDoc.data().fcmTokens || [] : [];
+
+      if (!savedTokens.includes(currentToken)) {
+        await setDoc(userDocRef, { fcmTokens: arrayUnion(currentToken) }, { merge: true });
+      }
+
+      setIsTokenSaved(true);
+    } catch (err) {
+      console.error('Erro ao sincronizar token:', err);
+      setIsTokenSaved(false);
     }
-  }, [user, vapidKey]);
-  
-  const handleRequestPermission = async () => {
-    if (!messaging || !user || !vapidKey) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Recurso de notificação não está disponível ou usuário não está logado.",
-      });
+  };
+
+  // Checa permissão e sincroniza token ao montar o componente
+  useEffect(() => {
+    if (!user || !messaging || !vapidKey) {
+      setIsProcessing(false);
       return;
     }
-    
+
+    const initialize = async () => {
+      setIsProcessing(true);
+      const permission = Notification.permission;
+      setNotificationStatus(permission);
+
+      if (permission === 'granted') {
+        await syncToken();
+      }
+
+      setIsProcessing(false);
+    };
+
+    initialize();
+
+    // Listener para mensagens em primeiro plano
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log('Mensagem recebida em primeiro plano:', payload);
+      // Aqui você pode exibir um toast ou UI customizada
+      toast({
+        title: payload.notification?.title || 'Nova notificação',
+        description: payload.notification?.body || '',
+      });
+    });
+
+    return () => unsubscribe();
+  }, [user, vapidKey]);
+
+  const handleRequestPermission = async () => {
+    if (!user || !messaging || !vapidKey) return;
+
     setIsProcessing(true);
     try {
       const permission = await Notification.requestPermission();
       setNotificationStatus(permission);
 
       if (permission === 'granted') {
-        try {
-          const currentToken = await getToken(messaging, { vapidKey });
-          if (currentToken) {
-            const userDocRef = doc(db, 'users', user.uid);
-            await setDoc(userDocRef, { fcmTokens: arrayUnion(currentToken) }, { merge: true });
-            setIsTokenSaved(true);
-            toast({
-              title: "Notificações Ativadas!",
-              description: "Você receberá notificações importantes.",
-            });
-          } else {
-             toast({ variant: "destructive", title: "Token não disponível" });
-          }
-        } catch (err) {
-          console.error('An error occurred while retrieving token. ', err);
-          toast({ variant: "destructive", title: "Erro ao obter token" });
-        }
+        await syncToken();
+        toast({
+          title: "Notificações Ativadas!",
+          description: "Você receberá notificações importantes neste dispositivo.",
+        });
       } else {
         toast({
           variant: "destructive",
           title: "Permissão Negada",
-          description: "Você não receberá notificações.",
+          description: "Você não receberá notificações neste dispositivo.",
         });
       }
-    } catch (error) {
-      console.error('An error occurred while requesting permission. ', error);
-      toast({ variant: "destructive", title: "Erro ao pedir permissão" });
+    } catch (err) {
+      console.error('Erro ao solicitar permissão:', err);
+      toast({ variant: "destructive", title: "Erro ao solicitar permissão" });
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleDisableNotifications = async () => {
-    if (!messaging || !user || !vapidKey) return;
-    
+    if (!user || !messaging || !vapidKey) return;
+
     setIsProcessing(true);
     try {
       const currentToken = await getToken(messaging, { vapidKey });
-      if (currentToken) {
-        await deleteToken(messaging);
-        const userDocRef = doc(db, 'users', user.uid);
-        await setDoc(userDocRef, { fcmTokens: arrayRemove(currentToken) }, { merge: true });
-        setIsTokenSaved(false);
-        setNotificationStatus('default');
-        toast({
-          title: "Notificações Desativadas",
-          description: "Você não receberá mais notificações neste dispositivo.",
-        });
-      }
-    } catch(error) {
-      console.error('Error disabling notifications: ', error);
-      toast({ variant: "destructive", title: "Erro ao desativar" });
+      if (!currentToken) return;
+
+      await deleteToken(messaging);
+
+      const userDocRef = doc(db, 'users', user.uid);
+      await setDoc(userDocRef, { fcmTokens: arrayRemove(currentToken) }, { merge: true });
+
+      setIsTokenSaved(false);
+      setNotificationStatus('default');
+
+      toast({
+        title: "Notificações Desativadas",
+        description: "Você não receberá mais notificações neste dispositivo.",
+      });
+    } catch (err) {
+      console.error('Erro ao desativar notificações:', err);
+      toast({ variant: "destructive", title: "Erro ao desativar notificações" });
     } finally {
       setIsProcessing(false);
     }
   };
-  
+
   if (isProcessing) {
     return (
-      <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      <div className="flex items-center gap-2 px-2 py-1.5 text-sm">
+        <Loader2 className="h-4 w-4 animate-spin" />
         Carregando...
       </div>
     );
@@ -139,25 +143,31 @@ export default function NotificationButton() {
 
   if (notificationStatus === 'denied') {
     return (
-      <div className="relative flex cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-destructive outline-none">
-        <BellOff className="mr-2 h-4 w-4" />
-        <span>Notificações bloqueadas</span>
+      <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-destructive">
+        <BellOff className="h-4 w-4" />
+        Notificações bloqueadas
       </div>
     );
   }
 
   if (isTokenSaved) {
     return (
-      <button className="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground" onClick={handleDisableNotifications}>
-        <BellOff className="mr-2 h-4 w-4 text-destructive" />
+      <button
+        className="flex w-full items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+        onClick={handleDisableNotifications}
+      >
+        <BellOff className="h-4 w-4 text-destructive" />
         Desativar Notificações
       </button>
     );
   }
 
   return (
-    <button className="relative flex w-full cursor-default select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground" onClick={handleRequestPermission}>
-      <BellRing className="mr-2 h-4 w-4" />
+    <button
+      className="flex w-full items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+      onClick={handleRequestPermission}
+    >
+      <BellRing className="h-4 w-4" />
       Ativar Notificações
     </button>
   );

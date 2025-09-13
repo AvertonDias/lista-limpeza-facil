@@ -125,7 +125,9 @@ export default function PublicListPage() {
 
         const shoppingListDoc = await getDoc(shoppingListDocRef);
         if (shoppingListDoc.exists()) {
-          setShoppingList(shoppingListDoc.data().items || []);
+          const items = shoppingListDoc.data().items || [];
+          items.sort((a: ShoppingListItem, b: ShoppingListItem) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+          setShoppingList(items);
         } else {
           // If the shopping list doesn't exist, create it.
           await setDoc(shoppingListDocRef, { userId: userId, items: [] });
@@ -153,7 +155,9 @@ export default function PublicListPage() {
           shoppingListDocRef,
           (doc) => {
             if (doc.exists()) {
-              setShoppingList(doc.data().items || []);
+              const items = doc.data().items || [];
+              items.sort((a: ShoppingListItem, b: ShoppingListItem) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+              setShoppingList(items);
             }
           },
           (e) => {
@@ -208,7 +212,7 @@ export default function PublicListPage() {
         });
         
         // Send notification
-        await sendNotification(userId, 'Novo Item na Lista!', `O item "${item.name}" foi adicionado à sua lista.`);
+        await sendNotification(userId, 'Novo Item na Lista!', `O item "${item.name}" foi adicionado à sua lista.`, {click_action: '/'});
     }
   };
 
@@ -234,7 +238,7 @@ export default function PublicListPage() {
     });
 
     // Send notification
-    await sendNotification(userId, 'Novo Item na Lista!', `O item "${newItem.name}" (avulso) foi adicionado à sua lista.`);
+    await sendNotification(userId, 'Novo Item na Lista!', `O item "${newItem.name}" (avulso) foi adicionado à sua lista.`, {click_action: '/'});
 
     setCustomItemName("");
   };
@@ -272,7 +276,7 @@ export default function PublicListPage() {
       // Send notification
       const notificationTitle = feedbackType === 'doubt' ? `Nova Dúvida de ${feedbackName}` : 'Nova Sugestão Recebida';
       const notificationBody = feedbackText.substring(0, 100) + (feedbackText.length > 100 ? '...' : '');
-      await sendNotification(userId, notificationTitle, notificationBody);
+      await sendNotification(userId, notificationTitle, notificationBody, {click_action: '/'});
 
       setIsFeedbackModalOpen(false);
       setFeedbackType(null);

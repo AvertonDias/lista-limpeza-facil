@@ -28,7 +28,7 @@ interface UserData {
     email?: string;
 }
 
-export async function sendNotification(userId: string, title: string, body: string) {
+export async function sendNotification(userId: string, title: string, body: string, data?: Record<string, string>) {
   if (!admin.apps.length) {
     console.error("Firebase Admin SDK não inicializado.");
     return { success: false, error: "Admin SDK não inicializado" };
@@ -53,49 +53,52 @@ export async function sendNotification(userId: string, title: string, body: stri
       return { success: false, error: 'Nenhum token encontrado' };
     }
 
-    const message: admin.messaging.MulticastMessage = {
-        tokens,
-        data: {
-          title,
-          body,
-          click_action: `https://lista-limpeza-facil.web.app/`
-        },
-        webpush: {
-            notification: {
-                icon: '/images/placeholder-icon.png?v=2'
-            },
-        }
-    };
-    
-    const response = await admin.messaging().sendEachForMulticast(message);
     const tokensToRemove: string[] = [];
+    const successfulSends: string[] = [];
 
-    response.responses.forEach((result, index) => {
-        if (!result.success) {
-            console.error('Falha ao enviar para o token:', tokens[index], result.error);
-             if (
-                result.error.code === 'messaging/invalid-registration-token' ||
-                result.error.code === 'messaging/registration-token-not-registered'
-             ) {
-                tokensToRemove.push(tokens[index]);
-             }
+    await Promise.all(
+      tokens.map(async (token) => {
+        const message: admin.messaging.Message = {
+          token,
+          notification: { title, body },
+          data: data || {},
+          webpush: {
+            fcmOptions: {
+              link: '/', // página que abre ao clicar
+            },
+            notification: {
+              icon: '/images/placeholder-icon.png?v=2',
+              tag: new Date().getTime().toString(), // evita duplicação
+            },
+          },
+        };
+
+        try {
+          const response = await admin.messaging().send(message);
+          successfulSends.push(response);
+        } catch (error: any) {
+          if (
+            error.code === 'messaging/invalid-registration-token' ||
+            error.code === 'messaging/registration-token-not-registered'
+          ) {
+            tokensToRemove.push(token);
+          } else {
+            console.error('Falha ao enviar para o token:', token, error);
+          }
         }
-    });
+      })
+    );
 
+    // Remove tokens inválidos
     if (tokensToRemove.length > 0) {
-        console.log("Removendo tokens inválidos:", tokensToRemove);
-        const { FieldValue } = await import('firebase-admin/firestore');
-        await userDocRef.update({ 
-            fcmTokens: FieldValue.arrayRemove(...tokensToRemove) 
-        });
+      console.log("Removendo tokens inválidos:", tokensToRemove);
+      const { FieldValue } = await import('firebase-admin/firestore');
+      await userDocRef.update({ 
+          fcmTokens: FieldValue.arrayRemove(...tokensToRemove) 
+      });
     }
 
-    if (response.successCount > 0) {
-         return { success: true, count: response.successCount, removed: tokensToRemove };
-    } else {
-         return { success: false, error: "Nenhuma mensagem pôde ser enviada.", removed: tokensToRemove };
-    }
-    
+    return { success: successfulSends.length > 0, count: successfulSends.length, removed: tokensToRemove };
   } catch (error: any) {
     console.error('Erro ao enviar mensagem FCM:', error);
     return { success: false, error: error.code || (error as Error).message };

@@ -10,10 +10,11 @@ export const metadata: Metadata = {
     icon: "/images/placeholder-icon.png?v=2",
     apple: "/images/placeholder-icon.png?v=2",
   },
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#F5F5F5",
+  themeColor: "#457B9D",
 }
 
 export default function RootLayout({

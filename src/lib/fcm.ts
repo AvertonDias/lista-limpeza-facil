@@ -1,12 +1,7 @@
 'use server';
 
-import { doc, getDoc, arrayRemove } from 'firebase/firestore';
+import { doc, getDoc, setDoc, arrayRemove } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-
-// This is a server-side function to send a notification.
-// We are using the legacy HTTP API for simplicity.
-// For a production application, you should use the a server-side SDK (e.g., Firebase Admin SDK)
-// and the new HTTP v1 API.
 
 const FCM_ENDPOINT = 'https://fcm.googleapis.com/fcm/send';
 // IMPORTANT: This is a server key. In a real production app, this should be stored securely
@@ -35,13 +30,21 @@ export async function sendNotification(userId: string, title: string, body: stri
       return { success: false, error: 'No tokens found' };
     }
     
+    // Adjusted payload for better PWA compatibility, even with legacy API
     const message = {
-      registration_ids: tokens, // Use registration_ids for multiple tokens
+      registration_ids: tokens,
       notification: {
         title,
         body,
-        icon: '/images/placeholder-icon.png?v=2',
       },
+      webpush: {
+        notification: {
+          icon: '/images/placeholder-icon.png?v=2',
+        },
+        fcm_options: {
+          link: `/lista/${userId}`
+        }
+      }
     };
 
     const response = await fetch(FCM_ENDPOINT, {
@@ -67,14 +70,13 @@ export async function sendNotification(userId: string, title: string, body: stri
         });
         if (tokensToRemove.length > 0) {
             console.log("Removing invalid tokens:", tokensToRemove);
-            // This is a fire-and-forget operation, no need to await
-            setDoc(userDocRef, { fcmTokens: arrayRemove(...tokensToRemove) }, { merge: true });
+            await setDoc(userDocRef, { fcmTokens: arrayRemove(...tokensToRemove) }, { merge: true });
         }
       }
       return { success: true, response: responseData };
     } else {
       console.error('Error sending message:', responseData);
-      // Clean up invalid tokens
+      // Clean up invalid tokens on failure as well
       if (responseData.results) {
         const tokensToRemove: string[] = [];
         responseData.results.forEach((result: any, index: number) => {
@@ -84,8 +86,7 @@ export async function sendNotification(userId: string, title: string, body: stri
         });
         if (tokensToRemove.length > 0) {
             console.log("Removing invalid tokens:", tokensToRemove);
-            // This is a fire-and-forget operation, no need to await
-            setDoc(userDocRef, { fcmTokens: arrayRemove(...tokensToRemove) }, { merge: true });
+            await setDoc(userDocRef, { fcmTokens: arrayRemove(...tokensToRemove) }, { merge: true });
         }
       }
       return { success: false, error: responseData };

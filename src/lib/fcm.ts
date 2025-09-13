@@ -1,24 +1,28 @@
 'use server';
 
 import admin from 'firebase-admin';
+import { getFirestore } from 'firebase-admin/firestore';
 
-// Inicializa Firebase Admin SDK apenas uma vez
+// Inicializa Firebase Admin apenas uma vez com variáveis de ambiente
 if (!admin.apps.length) {
   try {
-    const serviceAccount = require('../../../serviceAccountKey.json');
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      }),
     });
+    console.log("Firebase Admin SDK inicializado com sucesso.");
   } catch (error) {
     console.error(
-      "Falha ao inicializar o Firebase Admin SDK. Verifique se o arquivo `serviceAccountKey.json` existe na raiz do projeto.",
+      "Falha ao inicializar o Firebase Admin SDK. Verifique suas variáveis de ambiente.",
       error
     );
   }
 }
 
-// Acessa o Firestore pelo Admin SDK
-const dbAdmin = admin.firestore();
+const dbAdmin = getFirestore();
 
 interface SendNotificationResult {
   success: boolean;
@@ -33,7 +37,8 @@ interface SendNotificationResult {
 export async function sendNotification(
   userId: string,
   title: string,
-  body: string
+  body: string,
+  data?: Record<string, string>
 ): Promise<SendNotificationResult> {
   if (!admin.apps.length) {
     return { success: false, error: "Admin SDK não inicializado" };
@@ -57,18 +62,16 @@ export async function sendNotification(
     const tokensToRemove: string[] = [];
     const successfulSends: string[] = [];
 
-    // Envia notificações para todos os tokens
     await Promise.all(
       tokens.map(async (token) => {
         const message: admin.messaging.Message = {
           token,
           notification: { title, body },
+          data: data || {},
           webpush: {
             notification: {
               icon: '/images/placeholder-icon.png?v=2',
-            },
-            fcmOptions: {
-              link: '/', // URL absoluta ou relativa do seu app
+              tag: new Date().getTime().toString(),
             },
           },
         };

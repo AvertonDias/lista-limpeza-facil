@@ -32,18 +32,18 @@ export async function sendNotification(userId: string, title: string, body: stri
     const notifications = tokens.map((token: string) => {
       const msg: admin.messaging.Message = {
         token,
-        notification: { 
-          title, 
+        // We use the "data" payload to have full control on the client (service worker)
+        data: {
+          title,
           body,
-          image: iconUrl, // Use 'image' for the main icon in the notification body
+          icon: iconUrl,
+          // The link should be the root of your app to handle navigation correctly
+          link: 'https://lista-de-limpeza-facil.vercel.app/'
         },
         webpush: {
-          notification: { 
-            icon: iconUrl, // Use 'icon' for the small icon
-          },
-          fcmOptions: { 
-            // The link should be the root of your app to handle navigation correctly
-            link: 'https://lista-de-limpeza-facil.vercel.app/' 
+          // It's a good practice to set a high priority for notifications.
+          headers: {
+            Urgency: 'high',
           },
         },
       };

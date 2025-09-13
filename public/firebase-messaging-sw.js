@@ -1,11 +1,8 @@
-// public/firebase-messaging-sw.js
-
-// Scripts do Firebase
+// Import scripts for Firebase
 importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging-compat.js');
 
-// Configuração do Firebase
-// Esta configuração é segura para ser pública.
+// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
   authDomain: "studio-1326322560-ad791.firebaseapp.com",
@@ -15,60 +12,57 @@ const firebaseConfig = {
   appId: "1:417616889091:web:f2c93816e5eaec7ff4d536"
 };
 
-// Inicializa o Firebase
-firebase.initializeApp(firebaseConfig);
-const messaging = firebase.messaging();
+// Initialize Firebase
+const app = firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging(app);
 
-// Ouvinte para o evento 'push' (notificações em segundo plano)
-self.addEventListener('push', function(event) {
-  console.log('[firebase-messaging-sw.js] Push Received.');
-  
-  if (event.data) {
-    try {
-        const payload = event.data.json();
-        console.log('[firebase-messaging-sw.js] Push payload: ', payload);
+// --- Event Listeners for Service Worker ---
 
-        const notificationTitle = payload.data.title || 'Nova Notificação';
-        const notificationOptions = {
-            body: payload.data.body || '',
-            icon: payload.data.icon || '/images/placeholder-icon-192.png',
-            badge: '/images/placeholder-icon-192.png',
-            data: {
-                link: payload.data.link || '/'
-            }
-        };
+// This listener handles the click on a notification
+self.addEventListener('notificationclick', (event) => {
+  console.log('[firebase-messaging-sw.js] Notification click received.', event);
+  event.notification.close();
+  const urlToOpen = event.notification.data.url || '/';
+  event.waitUntil(
+    clients.openWindow(urlToOpen)
+  );
+});
 
-        // Garante que o Service Worker espere a notificação ser exibida
-        event.waitUntil(
-            self.registration.showNotification(notificationTitle, notificationOptions)
-        );
-    } catch(e) {
-        console.error('[firebase-messaging-sw.js] Error parsing push data:', e);
-    }
+// This listener handles incoming push notifications
+self.addEventListener('push', (event) => {
+  console.log('[firebase-messaging-sw.js] Push event received.', event);
+
+  let pushData;
+  try {
+    pushData = event.data.json();
+    console.log('[firebase-messaging-sw.js] Push data:', pushData);
+  } catch (e) {
+    console.error('[firebase-messaging-sw.js] Failed to parse push data:', e);
+    return;
   }
+
+  if (!pushData || !pushData.data) {
+      console.error('[firebase-messaging-sw.js] Push data is missing `data` field.');
+      return;
+  }
+
+  const { title, body, icon, link } = pushData.data;
+
+  // These are the options for the notification that will be shown
+  const notificationOptions = {
+    body: body,
+    icon: icon, // The main, larger icon
+    badge: icon, // The small icon (badge) that replaces the bell
+    data: {
+      url: link, // URL to open on click
+    },
+  };
+
+  const notificationPromise = self.registration.showNotification(
+    title,
+    notificationOptions
+  );
+  event.waitUntil(notificationPromise);
 });
 
-
-// Ouvinte para o evento de clique na notificação
-self.addEventListener('notificationclick', function(event) {
-    console.log('[firebase-messaging-sw.js] Notification click Received.');
-
-    event.notification.close();
-
-    const link = event.notification.data.link || '/';
-    
-    // Garante que o Service Worker espere a nova janela/aba ser focada/aberta
-    event.waitUntil(
-        clients.matchAll({
-            type: "window"
-        }).then(function(clientList) {
-            for (let i = 0; i < clientList.length; i++) {
-                const client = clientList[i];
-                if (client.url === link && 'focus' in client)
-                    return client.focus();
-            }
-            if (clients.openWindow)
-                return clients.openWindow(link);
-        })
-    );
-});
+console.log('[firebase-messaging-sw.js] Service worker loaded.');

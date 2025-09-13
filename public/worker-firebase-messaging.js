@@ -1,56 +1,55 @@
-// This file must be in the public folder.
-// It is used by the PWA to handle background notifications.
+// firebase-messaging-sw.js
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
 
-try {
-  importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
-  importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
+// Inicialize o Firebase no Service Worker
+firebase.initializeApp({
+  apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
+  authDomain: "studio-1326322560-ad791.firebaseapp.com",
+  projectId: "studio-1326322560-ad791",
+  messagingSenderId: "417616889091",
+  appId: "1:417616889091:web:f2c93816e5eaec7ff4d536",
+});
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
-    authDomain: "studio-1326322560-ad791.firebaseapp.com",
-    projectId: "studio-1326322560-ad791",
-    storageBucket: "studio-1326322560-ad791.appspot.com",
-    messagingSenderId: "417616889091",
-    appId: "1:417616889091:web:f2c93816e5eaec7ff4d536"
-  };
+const messaging = firebase.messaging();
 
-  firebase.initializeApp(firebaseConfig);
+// Função para exibir notificação evitando duplicadas
+const showNotification = (payload) => {
+  const notification = payload.notification || payload.data;
+  const { title, body, icon } = notification || {};
+  const tag = payload.messageId || 'default-tag'; // tag evita duplicação
 
-  const messaging = firebase.messaging();
+  if (title && body) {
+    self.registration.showNotification(title, {
+      body,
+      icon: icon || '/images/placeholder-icon.png?v=2',
+      tag, // Service Worker usa a tag para não repetir a mesma notificação
+      data: payload.data || {},
+    });
+  }
+};
 
-  messaging.onBackgroundMessage((payload) => {
-    console.log('Mensagem recebida em segundo plano:', payload);
+// Mensagens recebidas em segundo plano
+messaging.onBackgroundMessage((payload) => {
+  console.log('Mensagem recebida em segundo plano:', payload);
+  showNotification(payload);
+});
 
-    if (payload.webpush?.notification) {
-      const { title, body, icon } = payload.webpush.notification;
-      const link = payload.webpush.fcm_options?.link || '/';
-
-      self.registration.showNotification(title, {
-        body,
-        icon,
-        data: { click_action: link }
-      });
-    }
-  });
-
-  self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    const url = event.notification.data.click_action || '/';
-    
-    event.waitUntil(
-      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-        for (const client of windowClients) {
-          if (client.url === url && 'focus' in client) {
-            return client.focus();
-          }
+// Optional: captura de clique na notificação
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const clickAction = event.notification.data?.click_action || '/';
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (new URL(client.url).pathname === new URL(clickAction, self.location.origin).pathname && 'focus' in client) {
+          return client.focus();
         }
-        if (clients.openWindow) {
-          return clients.openWindow(url);
-        }
-      })
-    );
-  });
-
-} catch (e) {
-  console.error("Error in service worker, push notifications will not work.", e);
-}
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(clickAction);
+      }
+    })
+  );
+});

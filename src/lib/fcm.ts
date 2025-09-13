@@ -1,8 +1,7 @@
 'use server';
 
 import admin from 'firebase-admin';
-import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/firestore';
-
+import { getAdminFirestore } from 'firebase-admin/firestore';
 
 // Inicializa Firebase Admin apenas uma vez
 if (!admin.apps.length) {
@@ -56,15 +55,15 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     const message: admin.messaging.MulticastMessage = {
         tokens,
+        data: {
+          title,
+          body,
+          click_action: `https://lista-limpeza-facil.web.app/`
+        },
         webpush: {
             notification: {
-                title,
-                body,
                 icon: '/images/placeholder-icon.png?v=2'
             },
-            fcmOptions: {
-                link: 'https://lista-limpeza-facil.web.app/'
-            }
         }
     };
     
@@ -85,6 +84,7 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     if (tokensToRemove.length > 0) {
         console.log("Removendo tokens inválidos:", tokensToRemove);
+        const { FieldValue } = await import('firebase-admin/firestore');
         await userDocRef.update({ 
             fcmTokens: FieldValue.arrayRemove(...tokensToRemove) 
         });

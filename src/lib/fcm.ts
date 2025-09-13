@@ -51,7 +51,7 @@ export async function sendNotification(userId: string, title: string, body: stri
         }
     };
 
-    const response = await admin.messaging().sendMulticast(message);
+    const response = await admin.messaging().sendEachForMulticast(message);
     const tokensToRemove: string[] = [];
 
     response.responses.forEach((result, index) => {

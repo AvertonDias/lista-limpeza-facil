@@ -3,31 +3,37 @@ import admin from 'firebase-admin';
 
 // Inicializa Firebase Admin apenas uma vez com variáveis de ambiente
 if (!admin.apps.length) {
+  console.log("Iniciando tentativa de inicialização do Firebase Admin SDK...");
+
+  const projectId = process.env.ID_DO_PROJETO_FIREBASE;
+  const clientEmail = process.env.E_MAIL_DO_CLIENTE_FIREBASE;
+  const privateKeyRaw = process.env.CHAVE_PRIVADA_FIREBASE;
+
+  // Logs de diagnóstico aprimorados
+  console.log("ID_DO_PROJETO_FIREBASE:", projectId ? "Carregado" : "Não encontrado");
+  console.log("E_MAIL_DO_CLIENTE_FIREBASE:", clientEmail ? "Carregado" : "Não encontrado");
+  console.log("CHAVE_PRIVADA_FIREBASE:", privateKeyRaw ? "Carregado" : "Não encontrado");
+
+  if (!projectId || !clientEmail || !privateKeyRaw) {
+    console.error("ERRO CRÍTICO: Uma ou mais variáveis de ambiente do Firebase não foram encontradas. Verifique a configuração no Vercel.");
+    throw new Error("As variáveis de ambiente do Firebase (ID_DO_PROJETO_FIREBASE, E_MAIL_DO_CLIENTE_FIREBASE, CHAVE_PRIVADA_FIREBASE) não estão configuradas corretamente.");
+  }
+
   try {
-    const adminConfig = {
-      projectId: process.env.ID_DO_PROJETO_FIREBASE,
-      clientEmail: process.env.E_MAIL_DO_CLIENTE_FIREBASE, // Corrigido de hífen para underscore
-      privateKey: process.env.CHAVE_PRIVADA_FIREBASE?.replace(/\\n/g, '\n'),
-    };
-    
-    // Diagnóstico: Verifica se as variáveis foram carregadas
-    if (!adminConfig.projectId || !adminConfig.clientEmail || !adminConfig.privateKey) {
-        console.error("Falha ao carregar variáveis de ambiente do Firebase.");
-        console.error("ID_DO_PROJETO_FIREBASE:", adminConfig.projectId ? "Carregado" : "Não encontrado");
-        console.error("E_MAIL_DO_CLIENTE_FIREBASE:", adminConfig.clientEmail ? "Carregado" : "Não encontrado");
-        console.error("CHAVE_PRIVADA_FIREBASE:", adminConfig.privateKey ? "Carregado" : "Não encontrado");
-        throw new Error("As variáveis de ambiente do Firebase (ID_DO_PROJETO_FIREBASE, E_MAIL_DO_CLIENTE_FIREBASE, CHAVE_PRIVADA_FIREBASE) não estão configuradas corretamente no Vercel.");
-    }
+    const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
     
     admin.initializeApp({
-      credential: admin.credential.cert(adminConfig),
+      credential: admin.credential.cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
     });
     console.log("Firebase Admin SDK inicializado com sucesso.");
   } catch (error) {
-    console.error(
-      "Falha ao inicializar o Firebase Admin SDK. Verifique suas variáveis de ambiente e os logs acima.",
-      error
-    );
+    console.error("Falha ao inicializar o Firebase Admin SDK. Verifique suas variáveis de ambiente e os logs acima.", error);
+    // Lançar o erro novamente para que o Vercel registre a falha da função
+    throw error;
   }
 }
 

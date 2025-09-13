@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     icon: "/images/placeholder-icon.png?v=2",
     apple: "/images/placeholder-icon.png?v=2",
   },
-  // O manifesto será adicionado condicionalmente abaixo
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {
@@ -29,9 +29,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
-        {process.env.NODE_ENV !== 'development' && (
-          <link rel="manifest" href="/manifest.json" />
-        )}
       </head>
       <body className="font-body antialiased">
         <AuthProvider>

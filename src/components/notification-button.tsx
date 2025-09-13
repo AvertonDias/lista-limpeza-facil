@@ -1,7 +1,7 @@
-'use client';
 
+'use client';
 import { useState, useEffect } from 'react';
-import { getToken, deleteToken, onMessage } from 'firebase/messaging';
+import { getToken, deleteToken } from 'firebase/messaging';
 import { doc, getDoc, setDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { messaging, db } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
@@ -12,99 +12,74 @@ export default function NotificationButton() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [status, setStatus] = useState<'default'|'granted'|'denied'>('default');
-  const [tokenSaved, setTokenSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
   const [loading, setLoading] = useState(true);
   const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
   useEffect(() => {
-    if (!user || !vapidKey || !messaging) { setLoading(false); return; }
+    if (!user || !messaging || !vapidKey) { setLoading(false); return; }
 
-    const init = async () => {
+    const initToken = async () => {
       setLoading(true);
       const permission = Notification.permission;
       setStatus(permission);
-
       if (permission === 'granted') {
         try {
-          const currentToken = await getToken(messaging, { vapidKey });
-          if (currentToken) {
-            const userDocRef = doc(db, 'users', user.uid);
-            const userDoc = await getDoc(userDocRef);
-            if (!userDoc.exists() || !userDoc.data().fcmTokens?.includes(currentToken)) {
-              await setDoc(userDocRef, { fcmTokens: arrayUnion(currentToken) }, { merge: true });
+          const token = await getToken(messaging, { vapidKey });
+          if (token) {
+            const ref = doc(db, 'users', user.uid);
+            const docSnap = await getDoc(ref);
+            if (!docSnap.exists() || !docSnap.data()?.fcmTokens?.includes(token)) {
+              await setDoc(ref, { fcmTokens: arrayUnion(token) }, { merge: true });
             }
-            setTokenSaved(true);
+            setIsSaved(true);
           }
-        } catch {}
+        } catch(e) { console.error(e); setIsSaved(false); }
+      } else {
+        setIsSaved(false);
       }
       setLoading(false);
     };
-    init();
 
-    // Listener para mensagens em primeiro plano
-    const unsubscribe = onMessage(messaging, (payload) => {
-      console.log('Mensagem recebida em primeiro plano:', payload);
-      // Aqui você pode exibir um toast ou UI customizada
-      toast({
-        title: payload.notification?.title || 'Nova notificação',
-        description: payload.notification?.body || '',
-      });
-    });
-
-    return () => unsubscribe();
-  }, [user, vapidKey, toast]);
+    initToken();
+  }, [user, vapidKey]);
 
   const enableNotifications = async () => {
-    if (!user || !vapidKey || !messaging) return;
+    if (!messaging || !user || !vapidKey) return;
     setLoading(true);
     try {
       const permission = await Notification.requestPermission();
       setStatus(permission);
       if (permission === 'granted') {
-        const currentToken = await getToken(messaging, { vapidKey });
-        if (currentToken) {
-          const userDocRef = doc(db, 'users', user.uid);
-          await setDoc(userDocRef, { fcmTokens: arrayUnion(currentToken) }, { merge: true });
-          setTokenSaved(true);
-          toast({ title: 'Notificações Ativadas!' });
+        const token = await getToken(messaging, { vapidKey });
+        if (token) {
+          await setDoc(doc(db, 'users', user.uid), { fcmTokens: arrayUnion(token) }, { merge: true });
+          setIsSaved(true);
+          toast({ title: "Notificações Ativadas!" });
         }
-      } else {
-        toast({ variant: 'destructive', title: 'Permissão Negada' });
       }
-    } catch {}
+    } catch(e) { console.error(e); toast({ variant:"destructive", title:"Erro" }); }
     setLoading(false);
   };
 
   const disableNotifications = async () => {
-    if (!user || !vapidKey || !messaging) return;
+    if (!messaging || !user || !vapidKey) return;
     setLoading(true);
     try {
-      const currentToken = await getToken(messaging, { vapidKey });
-      if (currentToken) {
+      const token = await getToken(messaging, { vapidKey });
+      if (token) {
         await deleteToken(messaging);
-        const userDocRef = doc(db, 'users', user.uid);
-        await setDoc(userDocRef, { fcmTokens: arrayRemove(currentToken) }, { merge: true });
-        setTokenSaved(false);
+        await setDoc(doc(db, 'users', user.uid), { fcmTokens: arrayRemove(token) }, { merge: true });
+        setIsSaved(false);
         setStatus('default');
-        toast({ title: 'Notificações Desativadas' });
+        toast({ title: "Notificações Desativadas" });
       }
-    } catch {}
+    } catch(e){ console.error(e); toast({ variant:"destructive", title:"Erro" }); }
     setLoading(false);
   };
 
-    if (loading) {
-    return (
-      <div className="flex items-center justify-center p-2">
-        <Loader2 className="h-4 w-4 animate-spin" />
-      </div>
-    );
-  }
-
-  if (status === 'denied')
-    return <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-destructive"><BellOff className="h-4 w-4" /> Notificações Bloqueadas</div>;
-
-  if (tokenSaved)
-    return <button className="flex w-full items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent" onClick={disableNotifications}><BellOff className="h-4 w-4" /> Desativar Notificações</button>;
-
-  return <button className="flex w-full items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent" onClick={enableNotifications}><BellRing className="h-4 w-4" /> Ativar Notificações</button>;
+  if (loading) return <div className="flex items-center gap-2"><Loader2 className="animate-spin"/> Carregando...</div>;
+  if (status === 'denied') return <div className="text-destructive flex items-center gap-2"><BellOff/> Bloqueadas</div>;
+  if (isSaved) return <button onClick={disableNotifications} className="flex items-center gap-2"><BellOff/> Desativar</button>;
+  return <button onClick={enableNotifications} className="flex items-center gap-2"><BellRing/> Ativar</button>;
 }

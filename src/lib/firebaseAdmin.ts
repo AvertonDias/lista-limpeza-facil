@@ -9,18 +9,18 @@ if (!admin.apps.length) {
   const clientEmail = process.env.E_MAIL_DO_CLIENTE_FIREBASE;
   const privateKeyRaw = process.env.CHAVE_PRIVADA_FIREBASE;
 
-  // Logs de diagnóstico aprimorados
-  console.log("ID_DO_PROJETO_FIREBASE:", projectId ? "Carregado" : "Não encontrado");
-  console.log("E_MAIL_DO_CLIENTE_FIREBASE:", clientEmail ? "Carregado" : "Não encontrado");
-  console.log("CHAVE_PRIVADA_FIREBASE:", privateKeyRaw ? "Carregado" : "Não encontrado");
-
   if (!projectId || !clientEmail || !privateKeyRaw) {
     console.error("ERRO CRÍTICO: Uma ou mais variáveis de ambiente do Firebase não foram encontradas. Verifique a configuração no Vercel.");
-    throw new Error("As variáveis de ambiente do Firebase (ID_DO_PROJETO_FIREBASE, E_MAIL_DO_CLIENTE_FIREBASE, CHAVE_PRIVADA_FIREBASE) não estão configuradas corretamente.");
+    console.log("ID_DO_PROJETO_FIREBASE:", projectId ? "Ok" : "FALHOU");
+    console.log("E_MAIL_DO_CLIENTE_FIREBASE:", clientEmail ? "Ok" : "FALHOU");
+    console.log("CHAVE_PRIVADA_FIREBASE:", privateKeyRaw ? "Ok" : "FALHOU");
+    throw new Error("As variáveis de ambiente do Firebase não estão configuradas corretamente.");
   }
 
   try {
-    const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
+    // A abordagem mais segura: usar JSON.parse na chave.
+    // Garanta que a variável no Vercel esteja entre aspas duplas.
+    const privateKey = JSON.parse(privateKeyRaw);
     
     admin.initializeApp({
       credential: admin.credential.cert({
@@ -32,7 +32,6 @@ if (!admin.apps.length) {
     console.log("Firebase Admin SDK inicializado com sucesso.");
   } catch (error) {
     console.error("Falha ao inicializar o Firebase Admin SDK. Verifique suas variáveis de ambiente e os logs acima.", error);
-    // Lançar o erro novamente para que o Vercel registre a falha da função
     throw error;
   }
 }

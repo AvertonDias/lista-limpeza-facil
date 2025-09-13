@@ -37,17 +37,22 @@ export async function sendNotification(userId: string, title: string, body: stri
     
     const message = {
         tokens: tokens,
-        notification: {
-            title,
-            body,
-        },
         webpush: {
             notification: {
+                title,
+                body,
                 icon: '/images/placeholder-icon.png?v=2',
             },
             fcm_options: {
                 link: 'https://lista-limpeza-facil.web.app/',
             }
+        },
+        // O campo 'data' pode ser usado se você quiser enviar dados adicionais para o service worker
+        data: {
+          title,
+          body,
+          icon: '/images/placeholder-icon.png?v=2',
+          click_action: 'https://lista-limpeza-facil.web.app/'
         }
     };
 

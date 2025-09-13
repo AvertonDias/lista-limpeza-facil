@@ -58,7 +58,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { sendNotification } from '@/lib/fcm';
-import { formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface UserData {
@@ -310,7 +310,7 @@ export default function PublicListPage() {
   
   const formatItemDate = (timestamp: Timestamp | null | undefined) => {
     if (!timestamp) return null;
-    return `adicionado ${formatDistanceToNow(timestamp.toDate(), { addSuffix: true, locale: ptBR })}`;
+    return format(timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
   }
 
   const renderShoppingList = () => (

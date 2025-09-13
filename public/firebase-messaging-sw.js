@@ -1,11 +1,11 @@
-// Import the Firebase app and messaging libraries.
-// See: https://firebase.google.com/docs/web/setup#access-firebase
+// public/firebase-messaging-sw.js
+
+// Scripts do Firebase
 importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging-compat.js');
 
-// Initialize the Firebase app in the service worker by passing in
-// your app's Firebase config object.
-// See: https://firebase.google.com/docs/web/setup#config-object
+// Configuração do Firebase
+// Esta configuração é segura para ser pública.
 const firebaseConfig = {
   apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
   authDomain: "studio-1326322560-ad791.firebaseapp.com",
@@ -15,53 +15,60 @@ const firebaseConfig = {
   appId: "1:417616889091:web:f2c93816e5eaec7ff4d536"
 };
 
+// Inicializa o Firebase
 firebase.initializeApp(firebaseConfig);
-
-// Retrieve an instance of Firebase Messaging so that it can handle background
-// messages.
 const messaging = firebase.messaging();
 
+// Ouvinte para o evento 'push' (notificações em segundo plano)
+self.addEventListener('push', function(event) {
+  console.log('[firebase-messaging-sw.js] Push Received.');
+  
+  if (event.data) {
+    try {
+        const payload = event.data.json();
+        console.log('[firebase-messaging-sw.js] Push payload: ', payload);
 
-// Handle background messages
-messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+        const notificationTitle = payload.data.title || 'Nova Notificação';
+        const notificationOptions = {
+            body: payload.data.body || '',
+            icon: payload.data.icon || '/images/placeholder-icon-192.png',
+            badge: '/images/placeholder-icon-192.png',
+            data: {
+                link: payload.data.link || '/'
+            }
+        };
 
-  const notificationTitle = payload.data.title;
-  const notificationOptions = {
-    body: payload.data.body,
-    icon: payload.data.icon,
-    data: {
-      url: payload.data.link // Pass the URL to the notification data
+        // Garante que o Service Worker espere a notificação ser exibida
+        event.waitUntil(
+            self.registration.showNotification(notificationTitle, notificationOptions)
+        );
+    } catch(e) {
+        console.error('[firebase-messaging-sw.js] Error parsing push data:', e);
     }
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
+  }
 });
 
 
-// Handle notification click
-self.addEventListener('notificationclick', (event) => {
-  console.log('[firebase-messaging-sw.js] Notification click received.');
+// Ouvinte para o evento de clique na notificação
+self.addEventListener('notificationclick', function(event) {
+    console.log('[firebase-messaging-sw.js] Notification click Received.');
 
-  event.notification.close();
+    event.notification.close();
 
-  const urlToOpen = event.notification.data.url;
-
-  event.waitUntil(
-    clients.matchAll({
-      type: 'window',
-      includeUncontrolled: true
-    }).then((clientList) => {
-      // If a window for the app is already open, focus it.
-      for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
-          return client.focus();
-        }
-      }
-      // Otherwise, open a new window.
-      if (clients.openWindow) {
-        return clients.openWindow(urlToOpen);
-      }
-    })
-  );
+    const link = event.notification.data.link || '/';
+    
+    // Garante que o Service Worker espere a nova janela/aba ser focada/aberta
+    event.waitUntil(
+        clients.matchAll({
+            type: "window"
+        }).then(function(clientList) {
+            for (let i = 0; i < clientList.length; i++) {
+                const client = clientList[i];
+                if (client.url === link && 'focus' in client)
+                    return client.focus();
+            }
+            if (clients.openWindow)
+                return clients.openWindow(link);
+        })
+    );
 });

@@ -30,7 +30,7 @@ export async function sendNotification(userId: string, title: string, body: stri
         notification: { title, body },
         webpush: {
           notification: { icon: '/images/placeholder-icon.png' },
-          fcmOptions: { link: '/' },
+          fcmOptions: { link: 'https://lista-de-limpeza-facil.vercel.app/' },
         },
       };
       return messaging.send(msg).then((res) => {
@@ -42,7 +42,6 @@ export async function sendNotification(userId: string, title: string, body: stri
         ) {
           invalidTokens.push(token);
         } else {
-           // Log other errors for debugging
            console.error(`Falha ao enviar para o token ${token}:`, e);
         }
       });

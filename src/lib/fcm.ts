@@ -3,7 +3,6 @@ import admin from 'firebase-admin';
 import { doc, getDoc, setDoc, arrayRemove } from 'firebase/firestore';
 import { db } from './firebase';
 
-// Inicializa Admin SDK apenas uma vez
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert({
@@ -19,22 +18,22 @@ export async function sendNotification(userId: string, title: string, body: stri
   const userDoc = await getDoc(userDocRef);
 
   if (!userDoc.exists()) return { success: false, error: 'Usuário não encontrado' };
-  const tokens: string[] = userDoc.data()?.fcmTokens || [];
+  const tokens = userDoc.data()?.fcmTokens || [];
 
   const invalidTokens: string[] = [];
   const successes: string[] = [];
 
-  await Promise.all(tokens.map(async (token) => {
+  await Promise.all(tokens.map(async (token: string) => {
     try {
-      const message: admin.messaging.Message = {
+      const msg: admin.messaging.Message = {
         token,
         notification: { title, body },
         webpush: {
           notification: { icon: '/images/placeholder-icon.png' },
-          fcm_options: { link: '/' },
-        },
+          fcmOptions: { link: '/' }
+        }
       };
-      const res = await admin.messaging().send(message);
+      const res = await admin.messaging().send(msg);
       successes.push(res);
     } catch (e: any) {
       if (['messaging/invalid-registration-token','messaging/registration-token-not-registered'].includes(e.code)) {

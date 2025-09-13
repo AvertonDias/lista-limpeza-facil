@@ -18,6 +18,7 @@ import {
   getDoc,
   Timestamp,
   getDocs,
+  serverTimestamp,
 } from "firebase/firestore";
 import type { Material, ShoppingListItem, Feedback } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -182,7 +183,12 @@ export default function DashboardPage() {
     const updatedList = [...shoppingList];
     const existingItem = updatedList.find((i) => i.id === item.id);
     if (!existingItem) {
-      updatedList.push({ id: item.id, name: item.name });
+      const newItem: ShoppingListItem = { 
+        id: item.id, 
+        name: item.name, 
+        createdAt: Timestamp.now() 
+      };
+      updatedList.push(newItem);
       updateShoppingListInFirestore(updatedList);
       toast({
         title: "Item Adicionado!",
@@ -309,6 +315,11 @@ export default function DashboardPage() {
     );
   }
 
+  const formatItemDate = (timestamp: Timestamp | null | undefined) => {
+    if (!timestamp) return null;
+    return `adicionado ${formatDistanceToNow(timestamp.toDate(), { addSuffix: true, locale: ptBR })}`;
+  }
+
   const formatFeedbackDate = (timestamp: Timestamp | null) => {
     if (!timestamp) return "Data desconhecida";
     return formatDistanceToNow(timestamp.toDate(), { addSuffix: true, locale: ptBR });
@@ -326,6 +337,11 @@ export default function DashboardPage() {
             >
               <div>
                 <p className="font-medium">{item.name}</p>
+                {item.createdAt && (
+                  <p className="text-xs text-muted-foreground">
+                    {formatItemDate(item.createdAt)}
+                  </p>
+                )}
               </div>
               <Button
                 variant="ghost"

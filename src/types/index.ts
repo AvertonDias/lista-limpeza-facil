@@ -8,6 +8,7 @@ export interface Material {
 
 export interface ShoppingListItem extends Omit<Material, 'userId'> {
   quantity?: number;
+  createdAt?: Timestamp;
 }
 
 export interface ShoppingList {

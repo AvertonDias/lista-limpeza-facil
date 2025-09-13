@@ -13,6 +13,7 @@ import {
   setDoc,
   addDoc,
   serverTimestamp,
+  Timestamp,
 } from "firebase/firestore";
 import type { Material, ShoppingListItem } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -57,7 +58,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { sendNotification } from '@/lib/fcm';
-
+import { formatDistanceToNow } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface UserData {
     displayName?: string;
@@ -193,7 +195,12 @@ export default function PublicListPage() {
         });
 
     } else {
-       updatedList.push({ id: item.id, name: item.name });
+       const newItem: ShoppingListItem = { 
+         id: item.id, 
+         name: item.name,
+         createdAt: Timestamp.now()
+       };
+       updatedList.push(newItem);
         await updateShoppingListInFirestore(updatedList);
         toast({
         title: "Item Adicionado!",
@@ -217,6 +224,7 @@ export default function PublicListPage() {
     const newItem: ShoppingListItem = {
       id: `custom-${Date.now()}`,
       name: customItemName.trim(),
+      createdAt: Timestamp.now()
     };
     const updatedList = [...shoppingList, newItem];
     await updateShoppingListInFirestore(updatedList);
@@ -299,6 +307,11 @@ export default function PublicListPage() {
       </div>
     );
   }
+  
+  const formatItemDate = (timestamp: Timestamp | null | undefined) => {
+    if (!timestamp) return null;
+    return `adicionado ${formatDistanceToNow(timestamp.toDate(), { addSuffix: true, locale: ptBR })}`;
+  }
 
   const renderShoppingList = () => (
     <>
@@ -323,6 +336,11 @@ export default function PublicListPage() {
               >
                 <div>
                   <p className="font-medium">{item.name}</p>
+                   {item.createdAt && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatItemDate(item.createdAt)}
+                    </p>
+                  )}
                 </div>
                 <Button
                   variant="ghost"

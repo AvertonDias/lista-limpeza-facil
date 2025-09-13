@@ -1,8 +1,8 @@
-// Import scripts for Firebase
-importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.15.0/firebase-messaging-compat.js');
+// Import and configure the Firebase SDK
+// It is a best practice to only import the services you need.
+importScripts('https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.22.1/firebase-messaging-compat.js');
 
-// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
   authDomain: "studio-1326322560-ad791.firebaseapp.com",
@@ -12,57 +12,53 @@ const firebaseConfig = {
   appId: "1:417616889091:web:f2c93816e5eaec7ff4d536"
 };
 
-// Initialize Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const messaging = firebase.messaging(app);
+firebase.initializeApp(firebaseConfig);
 
-// --- Event Listeners for Service Worker ---
+const messaging = firebase.messaging();
 
-// This listener handles the click on a notification
-self.addEventListener('notificationclick', (event) => {
-  console.log('[firebase-messaging-sw.js] Notification click received.', event);
-  event.notification.close();
-  const urlToOpen = event.notification.data.url || '/';
-  event.waitUntil(
-    clients.openWindow(urlToOpen)
-  );
-});
-
-// This listener handles incoming push notifications
+// Event listener for push notifications
 self.addEventListener('push', (event) => {
-  console.log('[firebase-messaging-sw.js] Push event received.', event);
+    console.log('[firebase-messaging-sw.js] Push event received.', event);
+    const data = event.data.json().data;
+    const notificationTitle = data.title;
+    const notificationOptions = {
+        body: data.body,
+        icon: data.icon, // The main, colorful icon for the notification body
+        badge: '/images/badge-icon.png', // The small, monochrome icon for the status bar
+        data: {
+            url: data.link // Pass the URL to the notification data
+        }
+    };
 
-  let pushData;
-  try {
-    pushData = event.data.json();
-    console.log('[firebase-messaging-sw.js] Push data:', pushData);
-  } catch (e) {
-    console.error('[firebase-messaging-sw.js] Failed to parse push data:', e);
-    return;
-  }
-
-  if (!pushData || !pushData.data) {
-      console.error('[firebase-messaging-sw.js] Push data is missing `data` field.');
-      return;
-  }
-
-  const { title, body, icon, link } = pushData.data;
-
-  // These are the options for the notification that will be shown
-  const notificationOptions = {
-    body: body,
-    icon: icon, // The main, larger icon
-    badge: icon, // The small icon (badge) that replaces the bell
-    data: {
-      url: link, // URL to open on click
-    },
-  };
-
-  const notificationPromise = self.registration.showNotification(
-    title,
-    notificationOptions
-  );
-  event.waitUntil(notificationPromise);
+    event.waitUntil(
+        self.registration.showNotification(notificationTitle, notificationOptions)
+    );
 });
 
-console.log('[firebase-messaging-sw.js] Service worker loaded.');
+// Event listener for notification clicks
+self.addEventListener('notificationclick', (event) => {
+  console.log('[firebase-messaging-sw.js] Notification click received.');
+  
+  event.notification.close();
+
+  const urlToOpen = event.notification.data.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({
+      type: 'window',
+      includeUncontrolled: true
+    }).then((clientList) => {
+      // If a window for the app is already open, focus it
+      for (let i = 0; i < clientList.length; i++) {
+        let client = clientList[i];
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      // Otherwise, open a new window
+      if (clients.openWindow) {
+        return clients.openWindow(urlToOpen);
+      }
+    })
+  );
+});

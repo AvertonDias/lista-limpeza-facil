@@ -1,7 +1,11 @@
 {
   "name": "Lista de Limpeza Fácil",
-  "short_name": "Lista Fácil",
+  "short_name": "Lista Limpeza",
   "description": "Gerencie sua lista de compras de limpeza de forma fácil e organizada.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F5F5F5",
+  "theme_color": "#457B9D",
   "icons": [
     {
       "src": "/images/placeholder-icon-192.png",
@@ -12,11 +16,12 @@
       "src": "/images/placeholder-icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
+    },
+    {
+      "src": "/images/badge-icon.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "monochrome"
     }
-  ],
-  "theme_color": "#457B9D",
-  "background_color": "#F5F5F5",
-  "display": "standalone",
-  "scope": "/",
-  "start_url": "/"
+  ]
 }

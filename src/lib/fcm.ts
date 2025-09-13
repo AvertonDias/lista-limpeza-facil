@@ -1,7 +1,5 @@
 'use server';
 
-import { doc, getDoc, updateDoc, arrayRemove } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { admin } from '@/lib/firebaseAdmin';
 
 interface UserData {
@@ -19,10 +17,11 @@ export async function sendNotification(userId: string, title: string, body: stri
   }
 
   try {
-    const userDocRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userDocRef);
+    const adminFirestore = admin.firestore();
+    const userDocRef = adminFirestore.collection('users').doc(userId);
+    const userDoc = await userDocRef.get();
 
-    if (!userDoc.exists()) {
+    if (!userDoc.exists) {
       console.error('Usuário não encontrado:', userId);
       return { success: false, error: 'Usuário não encontrado' };
     }
@@ -35,25 +34,16 @@ export async function sendNotification(userId: string, title: string, body: stri
       return { success: false, error: 'Nenhum token encontrado' };
     }
     
+    const messagePayload = {
+        title,
+        body,
+        icon: '/images/placeholder-icon.png?v=2',
+        click_action: 'https://lista-limpeza-facil.web.app/'
+    };
+    
     const message = {
         tokens: tokens,
-        webpush: {
-            notification: {
-                title,
-                body,
-                icon: '/images/placeholder-icon.png?v=2',
-            },
-            fcm_options: {
-                link: 'https://lista-limpeza-facil.web.app/',
-            }
-        },
-        // O campo 'data' pode ser usado se você quiser enviar dados adicionais para o service worker
-        data: {
-          title,
-          body,
-          icon: '/images/placeholder-icon.png?v=2',
-          click_action: 'https://lista-limpeza-facil.web.app/'
-        }
+        data: messagePayload
     };
 
     const response = await admin.messaging().sendEachForMulticast(message);
@@ -73,8 +63,8 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     if (tokensToRemove.length > 0) {
         console.log("Removendo tokens inválidos:", tokensToRemove);
-        await updateDoc(userDocRef, { 
-            fcmTokens: arrayRemove(...tokensToRemove) 
+        await userDocRef.update({ 
+            fcmTokens: admin.firestore.FieldValue.arrayRemove(...tokensToRemove) 
         });
     }
 

@@ -5,16 +5,18 @@ import admin from 'firebase-admin';
 if (!admin.apps.length) {
   try {
     const adminConfig = {
-      // Usando os nomes das variáveis de ambiente em português definidas no Vercel OU os nomes em inglês
-      projectId: process.env.ID_DO_PROJETO_FIREBASE || process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.E_MAIL_DO_CLIENTE_FIREBASE || process.env.FIREBASE_CLIENT_EMAIL,
-      // Para a chave privada, tentamos ler a variável em português e em inglês.
-      privateKey: (process.env.CHAVE_PRIVADA_FIREBASE || process.env.FIREBASE_PRIVATE_KEY)?.replace(/\\n/g, '\n'),
+      projectId: process.env.ID_DO_PROJETO_FIREBASE,
+      clientEmail: process.env.E_MAIL_DO_CLIENTE_FIREBASE,
+      privateKey: process.env.CHAVE_PRIVADA_FIREBASE?.replace(/\\n/g, '\n'),
     };
     
-    // Verifica se as variáveis foram carregadas
+    // Diagnóstico: Verifica se as variáveis foram carregadas
     if (!adminConfig.projectId || !adminConfig.clientEmail || !adminConfig.privateKey) {
-        throw new Error("As variáveis de ambiente do Firebase (projectId, clientEmail, privateKey) não estão configuradas corretamente no Vercel.");
+        console.error("Falha ao carregar variáveis de ambiente do Firebase.");
+        console.error("ID_DO_PROJETO_FIREBASE:", adminConfig.projectId ? "Carregado" : "Não encontrado");
+        console.error("E_MAIL_DO_CLIENTE_FIREBASE:", adminConfig.clientEmail ? "Carregado" : "Não encontrado");
+        console.error("CHAVE_PRIVADA_FIREBASE:", adminConfig.privateKey ? "Carregado" : "Não encontrado");
+        throw new Error("As variáveis de ambiente do Firebase (ID_DO_PROJETO_FIREBASE, E_MAIL_DO_CLIENTE_FIREBASE, CHAVE_PRIVADA_FIREBASE) não estão configuradas corretamente no Vercel.");
     }
     
     admin.initializeApp({
@@ -23,7 +25,7 @@ if (!admin.apps.length) {
     console.log("Firebase Admin SDK inicializado com sucesso.");
   } catch (error) {
     console.error(
-      "Falha ao inicializar o Firebase Admin SDK. Verifique suas variáveis de ambiente.",
+      "Falha ao inicializar o Firebase Admin SDK. Verifique suas variáveis de ambiente e os logs acima.",
       error
     );
   }

@@ -1,6 +1,27 @@
 'use server';
 
-import { admin } from '@/lib/firebaseAdmin';
+import admin from 'firebase-admin';
+import { getFirestore as getAdminFirestore, FieldValue } from 'firebase-admin/firestore';
+
+
+// Inicializa Firebase Admin apenas uma vez
+if (!admin.apps.length) {
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      }),
+    });
+    console.log("Firebase Admin SDK inicializado com sucesso.");
+  } catch (error) {
+    console.error(
+      "Falha ao inicializar o Firebase Admin SDK. Verifique suas variáveis de ambiente.",
+      error
+    );
+  }
+}
 
 interface UserData {
     fcmTokens?: string[];
@@ -10,14 +31,13 @@ interface UserData {
 
 export async function sendNotification(userId: string, title: string, body: string) {
   if (!admin.apps.length) {
-    console.error(
-      "Firebase Admin SDK não inicializado. Não é possível enviar notificações."
-    );
+    console.error("Firebase Admin SDK não inicializado.");
     return { success: false, error: "Admin SDK não inicializado" };
   }
 
+  const adminFirestore = getAdminFirestore();
+
   try {
-    const adminFirestore = admin.firestore();
     const userDocRef = adminFirestore.collection('users').doc(userId);
     const userDoc = await userDocRef.get();
 
@@ -33,19 +53,21 @@ export async function sendNotification(userId: string, title: string, body: stri
       console.log('Nenhum token FCM para o usuário:', userId);
       return { success: false, error: 'Nenhum token encontrado' };
     }
-    
-    const messagePayload = {
-        title,
-        body,
-        icon: '/images/placeholder-icon.png?v=2',
-        click_action: 'https://lista-limpeza-facil.web.app/'
-    };
-    
-    const message = {
-        tokens: tokens,
-        data: messagePayload
-    };
 
+    const message: admin.messaging.MulticastMessage = {
+        tokens,
+        webpush: {
+            notification: {
+                title,
+                body,
+                icon: '/images/placeholder-icon.png?v=2'
+            },
+            fcmOptions: {
+                link: 'https://lista-limpeza-facil.web.app/'
+            }
+        }
+    };
+    
     const response = await admin.messaging().sendEachForMulticast(message);
     const tokensToRemove: string[] = [];
 
@@ -64,7 +86,7 @@ export async function sendNotification(userId: string, title: string, body: stri
     if (tokensToRemove.length > 0) {
         console.log("Removendo tokens inválidos:", tokensToRemove);
         await userDocRef.update({ 
-            fcmTokens: admin.firestore.FieldValue.arrayRemove(...tokensToRemove) 
+            fcmTokens: FieldValue.arrayRemove(...tokensToRemove) 
         });
     }
 

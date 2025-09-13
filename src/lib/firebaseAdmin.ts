@@ -18,9 +18,8 @@ if (!admin.apps.length) {
   }
 
   try {
-    // A abordagem mais segura: usar JSON.parse na chave.
-    // Garanta que a variável no Vercel esteja entre aspas duplas.
-    const privateKey = JSON.parse(privateKeyRaw);
+    // Substitui os caracteres de escape '\\n' por quebras de linha reais '\n'
+    const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
     
     admin.initializeApp({
       credential: admin.credential.cert({

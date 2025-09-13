@@ -26,7 +26,7 @@ export default function NotificationButton() {
         if (currentPermission === 'granted') {
             const checkToken = async () => {
                 try {
-                    const currentToken = await getToken(messaging);
+                    const currentToken = await getToken(messaging, { vapidKey: 'BGgAa0C-KPGKCA0baZggbWM9qWrGyNw4JGyECYAVG0B3Y8F7KDbMEvX0JVh3Eyq0j5SkS0ozHLrmWmzr8CsJvO8' });
                     if (currentToken) {
                         const userDocRef = doc(db, 'users', user.uid);
                         const userDoc = await getDoc(userDocRef);
@@ -67,7 +67,7 @@ export default function NotificationButton() {
       if (permission === 'granted') {
         // Get token and save it
         try {
-            const currentToken = await getToken(messaging);
+            const currentToken = await getToken(messaging, { vapidKey: 'BGgAa0C-KPGKCA0baZggbWM9qWrGyNw4JGyECYAVG0B3Y8F7KDbMEvX0JVh3Eyq0j5SkS0ozHLrmWmzr8CsJvO8' });
             if (currentToken) {
                 const userDocRef = doc(db, 'users', user.uid);
                 
@@ -119,7 +119,7 @@ export default function NotificationButton() {
     
     setIsProcessing(true);
     try {
-        const currentToken = await getToken(messaging);
+        const currentToken = await getToken(messaging, { vapidKey: 'BGgAa0C-KPGKCA0baZggbWM9qWrGyNw4JGyECYAVG0B3Y8F7KDbMEvX0JVh3Eyq0j5SkS0ozHLrmWmzr8CsJvO8' });
         if (currentToken) {
             // Delete token from FCM
             await deleteToken(messaging);

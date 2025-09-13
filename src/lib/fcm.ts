@@ -1,17 +1,19 @@
 'use server';
 
 import admin from 'firebase-admin';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, doc, getDoc, arrayUnion, arrayRemove, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 // Inicializa Firebase Admin apenas uma vez com variáveis de ambiente
 if (!admin.apps.length) {
   try {
+    const adminConfig = {
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    };
     admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId: process.env.FIREBASE_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      }),
+      credential: admin.credential.cert(adminConfig),
     });
     console.log("Firebase Admin SDK inicializado com sucesso.");
   } catch (error) {
@@ -22,7 +24,7 @@ if (!admin.apps.length) {
   }
 }
 
-const dbAdmin = getFirestore();
+const dbAdmin = admin.firestore();
 
 interface SendNotificationResult {
   success: boolean;
@@ -59,49 +61,43 @@ export async function sendNotification(
       return { success: false, error: 'Nenhum token FCM encontrado para o usuário' };
     }
 
-    const tokensToRemove: string[] = [];
-    const successfulSends: string[] = [];
-
-    await Promise.all(
-      tokens.map(async (token) => {
-        const message: admin.messaging.Message = {
-          token,
-          notification: { title, body },
-          data: data || {},
-          webpush: {
-            notification: {
-              icon: '/images/placeholder-icon.png?v=2',
-              tag: new Date().getTime().toString(),
-            },
+    const message: admin.messaging.MulticastMessage = {
+        tokens,
+        notification: { title, body },
+        data: data || {},
+        webpush: {
+          notification: {
+            icon: '/images/placeholder-icon.png?v=2',
+            tag: new Date().getTime().toString(),
           },
-        };
+        },
+      };
 
-        try {
-          const response = await admin.messaging().send(message);
-          successfulSends.push(response);
-        } catch (error: any) {
-          console.error('Erro ao enviar notificação:', error.code, error.message);
-          if (
-            error.code === 'messaging/invalid-registration-token' ||
-            error.code === 'messaging/registration-token-not-registered'
-          ) {
-            tokensToRemove.push(token);
-          }
+    const response = await admin.messaging().sendEachForMulticast(message);
+
+    const tokensToRemove: string[] = [];
+    response.responses.forEach((result, index) => {
+      if (!result.success) {
+        const errorCode = result.error?.code;
+        if (
+          errorCode === 'messaging/invalid-registration-token' ||
+          errorCode === 'messaging/registration-token-not-registered'
+        ) {
+          tokensToRemove.push(tokens[index]);
         }
-      })
-    );
+      }
+    });
 
-    // Remove tokens inválidos do Firestore
     if (tokensToRemove.length > 0) {
       await userDocRef.update({
         fcmTokens: admin.firestore.FieldValue.arrayRemove(...tokensToRemove),
       });
     }
 
-    if (successfulSends.length > 0) {
-      return { success: true, count: successfulSends.length, removed: tokensToRemove };
+    if (response.successCount > 0) {
+      return { success: true, count: response.successCount, removed: tokensToRemove };
     } else {
-      return { success: false, error: 'Nenhuma mensagem pôde ser enviada' };
+      return { success: false, error: 'Nenhuma mensagem pôde ser enviada', removed: tokensToRemove };
     }
   } catch (error: any) {
     console.error('Erro ao enviar notificações FCM:', error);

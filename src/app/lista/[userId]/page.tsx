@@ -212,7 +212,7 @@ export default function PublicListPage() {
         });
         
         // Send notification
-        await sendNotification(userId, 'Novo Item na Lista!', `O item "${item.name}" foi adicionado à sua lista.`, {click_action: '/'});
+        await sendNotification(userId, 'Novo Item na Lista!', `O item "${item.name}" foi adicionado à sua lista.`);
     }
   };
 
@@ -238,7 +238,7 @@ export default function PublicListPage() {
     });
 
     // Send notification
-    await sendNotification(userId, 'Novo Item na Lista!', `O item "${newItem.name}" (avulso) foi adicionado à sua lista.`, {click_action: '/'});
+    await sendNotification(userId, 'Novo Item na Lista!', `O item "${newItem.name}" (avulso) foi adicionado à sua lista.`);
 
     setCustomItemName("");
   };
@@ -276,7 +276,7 @@ export default function PublicListPage() {
       // Send notification
       const notificationTitle = feedbackType === 'doubt' ? `Nova Dúvida de ${feedbackName}` : 'Nova Sugestão Recebida';
       const notificationBody = feedbackText.substring(0, 100) + (feedbackText.length > 100 ? '...' : '');
-      await sendNotification(userId, notificationTitle, notificationBody, {click_action: '/'});
+      await sendNotification(userId, notificationTitle, notificationBody);
 
       setIsFeedbackModalOpen(false);
       setFeedbackType(null);

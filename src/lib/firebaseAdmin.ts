@@ -6,7 +6,7 @@ if (!admin.apps.length) {
   try {
     const adminConfig = {
       projectId: process.env.ID_DO_PROJETO_FIREBASE,
-      clientEmail: process.env.E_MAIL_DO_CLIENTE_FIREBASE,
+      clientEmail: process.env.E_MAIL_DO_CLIENTE_FIREBASE, // Corrigido de hífen para underscore
       privateKey: process.env.CHAVE_PRIVADA_FIREBASE?.replace(/\\n/g, '\n'),
     };
     

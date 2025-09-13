@@ -1,7 +1,6 @@
 'use server';
 
 import admin from 'firebase-admin';
-import { getAdminFirestore } from 'firebase-admin/firestore';
 
 // Inicializa Firebase Admin apenas uma vez
 if (!admin.apps.length) {
@@ -34,7 +33,7 @@ export async function sendNotification(userId: string, title: string, body: stri
     return { success: false, error: "Admin SDK não inicializado" };
   }
 
-  const adminFirestore = getAdminFirestore();
+  const adminFirestore = admin.firestore();
 
   try {
     const userDocRef = adminFirestore.collection('users').doc(userId);
@@ -64,7 +63,7 @@ export async function sendNotification(userId: string, title: string, body: stri
           data: data || {},
           webpush: {
             fcmOptions: {
-              link: '/', // página que abre ao clicar
+              link: data?.click_action || '/', // página que abre ao clicar
             },
             notification: {
               icon: '/images/placeholder-icon.png?v=2',

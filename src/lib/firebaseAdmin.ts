@@ -1,36 +1,28 @@
 
 import admin from 'firebase-admin';
 
-// Inicializa Firebase Admin apenas uma vez com variáveis de ambiente
+// Inicializa Firebase Admin apenas uma vez
 if (!admin.apps.length) {
   console.log("Iniciando tentativa de inicialização do Firebase Admin SDK...");
 
-  const projectId = process.env.ID_DO_PROJETO_FIREBASE;
-  const clientEmail = process.env.E_MAIL_DO_CLIENTE_FIREBASE;
-  const privateKeyRaw = process.env.CHAVE_PRIVADA_FIREBASE;
+  const aplicationCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
-  if (!projectId || !clientEmail || !privateKeyRaw) {
-    console.error("ERRO CRÍTICO: Uma ou mais variáveis de ambiente do Firebase não foram encontradas. Verifique a configuração no Vercel.");
-    console.log("ID_DO_PROJETO_FIREBASE:", projectId ? "Ok" : "FALHOU");
-    console.log("E_MAIL_DO_CLIENTE_FIREBASE:", clientEmail ? "Ok" : "FALHOU");
-    console.log("CHAVE_PRIVADA_FIREBASE:", privateKeyRaw ? "Ok" : "FALHOU");
-    throw new Error("As variáveis de ambiente do Firebase não estão configuradas corretamente.");
+  if (!aplicationCredentials) {
+    console.error("ERRO CRÍTICO: A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON não foi encontrada. Verifique a configuração no Vercel.");
+    throw new Error("A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON não está configurada.");
   }
-
+  
   try {
-    // Substitui os caracteres de escape '\\n' por quebras de linha reais '\n'
-    const privateKey = privateKeyRaw.replace(/\\n/g, '\n');
-    
+    // Decodifica a string Base64 para obter o JSON das credenciais
+    const serviceAccount = JSON.parse(Buffer.from(aplicationCredentials, 'base64').toString('utf8'));
+
     admin.initializeApp({
-      credential: admin.credential.cert({
-        projectId,
-        clientEmail,
-        privateKey,
-      }),
+      credential: admin.credential.cert(serviceAccount),
     });
-    console.log("Firebase Admin SDK inicializado com sucesso.");
+
+    console.log("Firebase Admin SDK inicializado com sucesso via GOOGLE_APPLICATION_CREDENTIALS_JSON.");
   } catch (error) {
-    console.error("Falha ao inicializar o Firebase Admin SDK. Verifique suas variáveis de ambiente e os logs acima.", error);
+    console.error("Falha ao inicializar o Firebase Admin SDK. Verifique se a variável GOOGLE_APPLICATION_CREDENTIALS_JSON é uma string Base64 válida do seu arquivo de credenciais.", error);
     throw error;
   }
 }

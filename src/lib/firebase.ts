@@ -15,8 +15,7 @@ export const firebaseConfig: FirebaseOptions = {
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
-// Explicitly set the database ID to match the region.
-const db = getFirestore(app, '(default)');
+const db = getFirestore(app);
 
 // Get a messaging instance
 const messaging = (typeof window !== 'undefined') ? getMessaging(app) : null;

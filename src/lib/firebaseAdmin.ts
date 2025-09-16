@@ -1,40 +1,27 @@
 
 import admin from 'firebase-admin';
 
+// Carrega as variáveis de ambiente do arquivo .env
+import 'dotenv/config';
+
 // Inicializa Firebase Admin apenas uma vez
 if (!admin.apps.length) {
   console.log("Iniciando tentativa de inicialização do Firebase Admin SDK...");
 
-  // Em produção (Vercel), esperamos que a variável de ambiente esteja configurada.
-  if (process.env.NODE_ENV === 'production') {
-    const applicationCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+  const applicationCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
-    if (!applicationCredentials) {
-      console.error("ERRO CRÍTICO: A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON não foi encontrada em produção. Verifique a configuração no Vercel.");
-      throw new Error("A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON não está configurada.");
-    }
-    
+  if (applicationCredentials) {
     try {
-      // Decodifica a string Base64 para obter o JSON das credenciais
       const serviceAccount = JSON.parse(Buffer.from(applicationCredentials, 'base64').toString('utf8'));
-
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
-
-      console.log("Firebase Admin SDK inicializado com sucesso em produção via GOOGLE_APPLICATION_CREDENTIALS_JSON.");
+      console.log("Firebase Admin SDK inicializado com sucesso via variável de ambiente.");
     } catch (error) {
-      console.error("Falha ao inicializar o Firebase Admin SDK em produção. Verifique se a variável GOOGLE_APPLICATION_CREDENTIALS_JSON é uma string Base64 válida do seu arquivo de credenciais.", error);
-      throw error;
+      console.error("ERRO CRÍTICO: Falha ao inicializar o Firebase Admin SDK. Verifique se GOOGLE_APPLICATION_CREDENTIALS_JSON é uma string Base64 válida.", error);
     }
   } else {
-    // Em desenvolvimento, o SDK pode usar as credenciais padrão do ambiente (gcloud auth).
-     try {
-        admin.initializeApp();
-        console.log("Firebase Admin SDK inicializado com sucesso em desenvolvimento (usando credenciais padrão).");
-    } catch(e) {
-        console.error("Falha ao inicializar Firebase Admin SDK em desenvolvimento. Certifique-se de que você está autenticado via 'gcloud auth application-default login'.", e);
-    }
+    console.warn("AVISO: A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON não foi encontrada. As funcionalidades do Admin SDK (como envio de notificações) não funcionarão.");
   }
 }
 

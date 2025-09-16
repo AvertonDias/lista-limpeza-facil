@@ -3,10 +3,11 @@
 import { admin, db, messaging } from './firebaseAdmin';
 
 export async function sendNotification(userId: string, title: string, body: string) {
-  if (!admin.apps.length) {
-    // This check might be redundant if the admin initialization is solid, but good for safety.
-    console.error("ERRO: Admin SDK não inicializado antes de chamar sendNotification.");
-    return { success: false, error: 'Admin SDK não inicializado.' };
+  // Verificação robusta para garantir que os serviços do Admin SDK estão disponíveis.
+  if (!db || !messaging) {
+    const errorMessage = "ERRO: O Firebase Admin SDK não foi inicializado corretamente. As notificações não podem ser enviadas.";
+    console.error(errorMessage);
+    return { success: false, error: errorMessage };
   }
 
   const userDocRef = db.collection('users').doc(userId);
@@ -26,22 +27,22 @@ export async function sendNotification(userId: string, title: string, body: stri
     const invalidTokens: string[] = [];
     const successes: string[] = [];
 
-    // The icon must be a public URL
+    // O ícone deve ser uma URL pública
     const iconUrl = 'https://lista-de-limpeza-facil.vercel.app/images/placeholder-icon.png';
 
     const notifications = tokens.map((token: string) => {
       const msg: admin.messaging.Message = {
         token,
-        // We use the "data" payload to have full control on the client (service worker)
+        // Usamos o payload "data" para ter controle total no cliente (service worker)
         data: {
           title,
           body,
           icon: iconUrl,
-          // The link should be the root of your app to handle navigation correctly
+          // O link deve ser a raiz do seu app para lidar com a navegação corretamente
           link: 'https://lista-de-limpeza-facil.vercel.app/'
         },
         webpush: {
-          // It's a good practice to set a high priority for notifications.
+          // É uma boa prática definir uma prioridade alta para as notificações.
           headers: {
             Urgency: 'high',
           },

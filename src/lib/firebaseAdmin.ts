@@ -1,8 +1,9 @@
 
 import admin from 'firebase-admin';
+import dotenv from 'dotenv';
 
-// Next.js carrega automaticamente as variáveis de ambiente de arquivos .env
-// Portanto, a importação explícita de 'dotenv/config' não é necessária e pode causar erros de build.
+// Carrega as variáveis de ambiente do arquivo .env
+dotenv.config();
 
 // Inicializa Firebase Admin apenas uma vez
 if (!admin.apps.length) {

@@ -214,7 +214,6 @@ export default function PublicListPage() {
         // Send notification and handle response
         const notificationResult = await sendNotification(userId, 'Novo Item na Lista!', `O item "${item.name}" foi adicionado à sua lista.`);
         if (!notificationResult.success) {
-            console.error("Falha ao enviar notificação:", notificationResult.error);
             toast({
                 variant: "destructive",
                 title: "Erro de Notificação",
@@ -248,7 +247,6 @@ export default function PublicListPage() {
     // Send notification and handle response
     const notificationResult = await sendNotification(userId, 'Novo Item na Lista!', `O item "${newItem.name}" (avulso) foi adicionado à sua lista.`);
     if (!notificationResult.success) {
-        console.error("Falha ao enviar notificação:", notificationResult.error);
         toast({
             variant: "destructive",
             title: "Erro de Notificação",
@@ -294,7 +292,6 @@ export default function PublicListPage() {
       const notificationBody = feedbackText.substring(0, 100) + (feedbackText.length > 100 ? '...' : '');
       const notificationResult = await sendNotification(userId, notificationTitle, notificationBody);
       if (!notificationResult.success) {
-          console.error("Falha ao enviar notificação de feedback:", notificationResult.error);
           toast({
               variant: "destructive",
               title: "Erro de Notificação",

@@ -16,13 +16,21 @@ async function initializeFirebaseAdmin() {
   }
 
   try {
-    const serviceAccount = JSON.parse(Buffer.from(applicationCredentials, 'base64').toString('utf8'));
+    let serviceAccount;
+    try {
+        // Tenta analisar diretamente como JSON
+        serviceAccount = JSON.parse(applicationCredentials);
+    } catch (e) {
+        // Se falhar, tenta decodificar de Base64
+        serviceAccount = JSON.parse(Buffer.from(applicationCredentials, 'base64').toString('utf8'));
+    }
+    
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
     });
     console.log("Firebase Admin SDK inicializado sob demanda com sucesso.");
   } catch (error) {
-    console.error("ERRO CRÍTICO: Falha ao inicializar o Firebase Admin SDK. Verifique se GOOGLE_APPLICATION_CREDENTIALS_JSON é uma string Base64 válida.", error);
+    console.error("ERRO CRÍTICO: Falha ao inicializar o Firebase Admin SDK. Verifique o conteúdo de GOOGLE_APPLICATION_CREDENTIALS_JSON.", error);
     throw new Error(`Falha na inicialização do servidor: ${(error as Error).message}`);
   }
 }
@@ -53,11 +61,11 @@ export async function sendNotification(userId: string, title: string, body: stri
     const tokens = userDoc.data()?.fcmTokens || [];
     if (tokens.length === 0) {
       console.log(`Nenhum token FCM encontrado para o usuário ${userId}.`);
-      return { success: true }; // Não é um erro, apenas não há onde enviar.
+      return { success: true, sent: 0, removed: 0 }; // Não é um erro, apenas não há onde enviar.
     }
 
     const invalidTokens: string[] = [];
-    const successes: string[] = [];
+    let successCount = 0;
 
     const iconUrl = 'https://lista-de-limpeza-facil.vercel.app/images/placeholder-icon.png';
 
@@ -76,8 +84,8 @@ export async function sendNotification(userId: string, title: string, body: stri
           },
         },
       };
-      return messaging.send(msg).then((res) => {
-        successes.push(res);
+      return messaging.send(msg).then(() => {
+        successCount++;
       }).catch((e: any) => {
         if (
           e.code === 'messaging/invalid-registration-token' ||
@@ -98,10 +106,10 @@ export async function sendNotification(userId: string, title: string, body: stri
       });
     }
 
-    console.log(`Notificações enviadas: ${successes.length}, Tokens inválidos removidos: ${invalidTokens.length}`);
+    console.log(`Notificações enviadas: ${successCount}, Tokens inválidos removidos: ${invalidTokens.length}`);
     return {
       success: true,
-      sent: successes.length,
+      sent: successCount,
       removed: invalidTokens.length,
     };
   } catch (error) {

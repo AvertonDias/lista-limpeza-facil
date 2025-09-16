@@ -1,7 +1,6 @@
 'use server';
 
 import { admin } from './firebaseAdmin';
-import type { firestore } from 'firebase-admin';
 
 // Função auxiliar para inicializar o Firebase Admin SDK sob demanda.
 async function initializeFirebaseAdmin() {
@@ -13,7 +12,7 @@ async function initializeFirebaseAdmin() {
 
   if (!applicationCredentials) {
     console.error("ERRO CRÍTICO: A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON não foi encontrada. As notificações não funcionarão.");
-    throw new Error("Configuração do servidor incompleta.");
+    throw new Error("Configuração do servidor incompleta. GOOGLE_APPLICATION_CREDENTIALS_JSON não definida.");
   }
 
   try {
@@ -24,11 +23,18 @@ async function initializeFirebaseAdmin() {
     console.log("Firebase Admin SDK inicializado sob demanda com sucesso.");
   } catch (error) {
     console.error("ERRO CRÍTICO: Falha ao inicializar o Firebase Admin SDK. Verifique se GOOGLE_APPLICATION_CREDENTIALS_JSON é uma string Base64 válida.", error);
-    throw new Error("Falha na inicialização do servidor.");
+    throw new Error(`Falha na inicialização do servidor: ${(error as Error).message}`);
   }
 }
 
-export async function sendNotification(userId: string, title: string, body: string) {
+interface NotificationResult {
+    success: boolean;
+    sent?: number;
+    removed?: number;
+    error?: string;
+}
+
+export async function sendNotification(userId: string, title: string, body: string): Promise<NotificationResult> {
   try {
     // Garante que o SDK Admin está inicializado antes de prosseguir.
     await initializeFirebaseAdmin();
@@ -47,7 +53,7 @@ export async function sendNotification(userId: string, title: string, body: stri
     const tokens = userDoc.data()?.fcmTokens || [];
     if (tokens.length === 0) {
       console.log(`Nenhum token FCM encontrado para o usuário ${userId}.`);
-      return { success: false, error: 'Nenhum token encontrado para notificações.' };
+      return { success: true }; // Não é um erro, apenas não há onde enviar.
     }
 
     const invalidTokens: string[] = [];
@@ -94,7 +100,7 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     console.log(`Notificações enviadas: ${successes.length}, Tokens inválidos removidos: ${invalidTokens.length}`);
     return {
-      success: successes.length > 0,
+      success: true,
       sent: successes.length,
       removed: invalidTokens.length,
     };

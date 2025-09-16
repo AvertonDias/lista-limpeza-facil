@@ -211,8 +211,16 @@ export default function PublicListPage() {
         description: `${item.name} foi adicionado à lista de compras.`,
         });
         
-        // Send notification
-        await sendNotification(userId, 'Novo Item na Lista!', `O item "${item.name}" foi adicionado à sua lista.`);
+        // Send notification and handle response
+        const notificationResult = await sendNotification(userId, 'Novo Item na Lista!', `O item "${item.name}" foi adicionado à sua lista.`);
+        if (!notificationResult.success) {
+            console.error("Falha ao enviar notificação:", notificationResult.error);
+            toast({
+                variant: "destructive",
+                title: "Erro de Notificação",
+                description: `O item foi adicionado, mas a notificação falhou: ${notificationResult.error}`,
+            });
+        }
     }
   };
 
@@ -237,8 +245,16 @@ export default function PublicListPage() {
       description: `${newItem.name} foi adicionado à lista.`,
     });
 
-    // Send notification
-    await sendNotification(userId, 'Novo Item na Lista!', `O item "${newItem.name}" (avulso) foi adicionado à sua lista.`);
+    // Send notification and handle response
+    const notificationResult = await sendNotification(userId, 'Novo Item na Lista!', `O item "${newItem.name}" (avulso) foi adicionado à sua lista.`);
+    if (!notificationResult.success) {
+        console.error("Falha ao enviar notificação:", notificationResult.error);
+        toast({
+            variant: "destructive",
+            title: "Erro de Notificação",
+            description: `O item foi adicionado, mas a notificação falhou: ${notificationResult.error}`,
+        });
+    }
 
     setCustomItemName("");
   };
@@ -273,10 +289,19 @@ export default function PublicListPage() {
         description: "Obrigado pelo seu feedback.",
       });
 
-      // Send notification
+      // Send notification and handle response
       const notificationTitle = feedbackType === 'doubt' ? `Nova Dúvida de ${feedbackName}` : 'Nova Sugestão Recebida';
       const notificationBody = feedbackText.substring(0, 100) + (feedbackText.length > 100 ? '...' : '');
-      await sendNotification(userId, notificationTitle, notificationBody);
+      const notificationResult = await sendNotification(userId, notificationTitle, notificationBody);
+      if (!notificationResult.success) {
+          console.error("Falha ao enviar notificação de feedback:", notificationResult.error);
+          toast({
+              variant: "destructive",
+              title: "Erro de Notificação",
+              description: `Sua mensagem foi enviada, mas a notificação falhou: ${notificationResult.error}`,
+          });
+      }
+
 
       setIsFeedbackModalOpen(false);
       setFeedbackType(null);

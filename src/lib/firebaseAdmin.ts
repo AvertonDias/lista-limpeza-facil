@@ -1,14 +1,8 @@
 
 import admin from 'firebase-admin';
-import dotenv from 'dotenv';
-
-// Carrega as variáveis de ambiente do arquivo .env
-dotenv.config();
 
 // Inicializa Firebase Admin apenas uma vez
 if (!admin.apps.length) {
-  console.log("Iniciando tentativa de inicialização do Firebase Admin SDK...");
-
   const applicationCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
   if (applicationCredentials) {
@@ -17,7 +11,6 @@ if (!admin.apps.length) {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
-      console.log("Firebase Admin SDK inicializado com sucesso via variável de ambiente.");
     } catch (error) {
       console.error("ERRO CRÍTICO: Falha ao inicializar o Firebase Admin SDK. Verifique se GOOGLE_APPLICATION_CREDENTIALS_JSON é uma string Base64 válida.", error);
     }
@@ -26,7 +19,7 @@ if (!admin.apps.length) {
   }
 }
 
-const db = admin.firestore();
-const messaging = admin.messaging();
+const db = admin.apps.length ? admin.firestore() : null;
+const messaging = admin.apps.length ? admin.messaging() : null;
 
 export { admin, db, messaging };

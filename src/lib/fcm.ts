@@ -1,48 +1,70 @@
 'use server';
 
-import { admin, db, messaging } from './firebaseAdmin';
+import { admin } from './firebaseAdmin';
+import type { firestore } from 'firebase-admin';
 
-export async function sendNotification(userId: string, title: string, body: string) {
-  // Verificação robusta para garantir que os serviços do Admin SDK estão disponíveis.
-  if (!db || !messaging) {
-    const errorMessage = "ERRO: O Firebase Admin SDK não foi inicializado corretamente. As notificações não podem ser enviadas.";
-    console.error(errorMessage);
-    return { success: false, error: errorMessage };
+// Função auxiliar para inicializar o Firebase Admin SDK sob demanda.
+async function initializeFirebaseAdmin() {
+  if (admin.apps.length > 0) {
+    return; // Já inicializado
   }
 
-  const userDocRef = db.collection('users').doc(userId);
+  const applicationCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+
+  if (!applicationCredentials) {
+    console.error("ERRO CRÍTICO: A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON não foi encontrada. As notificações não funcionarão.");
+    throw new Error("Configuração do servidor incompleta.");
+  }
 
   try {
+    const serviceAccount = JSON.parse(Buffer.from(applicationCredentials, 'base64').toString('utf8'));
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+    });
+    console.log("Firebase Admin SDK inicializado sob demanda com sucesso.");
+  } catch (error) {
+    console.error("ERRO CRÍTICO: Falha ao inicializar o Firebase Admin SDK. Verifique se GOOGLE_APPLICATION_CREDENTIALS_JSON é uma string Base64 válida.", error);
+    throw new Error("Falha na inicialização do servidor.");
+  }
+}
+
+export async function sendNotification(userId: string, title: string, body: string) {
+  try {
+    // Garante que o SDK Admin está inicializado antes de prosseguir.
+    await initializeFirebaseAdmin();
+
+    const db = admin.firestore();
+    const messaging = admin.messaging();
+    
+    const userDocRef = db.collection('users').doc(userId);
     const userDoc = await userDocRef.get();
 
     if (!userDoc.exists) {
+      console.log(`Usuário ${userId} não encontrado para notificação.`);
       return { success: false, error: 'Usuário não encontrado' };
     }
 
     const tokens = userDoc.data()?.fcmTokens || [];
     if (tokens.length === 0) {
+      console.log(`Nenhum token FCM encontrado para o usuário ${userId}.`);
       return { success: false, error: 'Nenhum token encontrado para notificações.' };
     }
 
     const invalidTokens: string[] = [];
     const successes: string[] = [];
 
-    // O ícone deve ser uma URL pública
     const iconUrl = 'https://lista-de-limpeza-facil.vercel.app/images/placeholder-icon.png';
 
     const notifications = tokens.map((token: string) => {
       const msg: admin.messaging.Message = {
         token,
-        // Usamos o payload "data" para ter controle total no cliente (service worker)
         data: {
           title,
           body,
           icon: iconUrl,
-          // O link deve ser a raiz do seu app para lidar com a navegação corretamente
           link: 'https://lista-de-limpeza-facil.vercel.app/'
         },
         webpush: {
-          // É uma boa prática definir uma prioridade alta para as notificações.
           headers: {
             Urgency: 'high',
           },
@@ -70,6 +92,7 @@ export async function sendNotification(userId: string, title: string, body: stri
       });
     }
 
+    console.log(`Notificações enviadas: ${successes.length}, Tokens inválidos removidos: ${invalidTokens.length}`);
     return {
       success: successes.length > 0,
       sent: successes.length,

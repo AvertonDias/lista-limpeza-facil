@@ -27,7 +27,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(user);
       setLoading(false);
       if (user) {
-        // Request notification permission and save token when user logs in
         requestPermissionAndSaveToken(user);
       }
     });
@@ -38,7 +37,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       if (messaging) {
-        // Handle foreground messages
         const unsubscribeOnMessage = onMessage(messaging, (payload) => {
           console.log("Foreground message received.", payload);
           toast({
@@ -52,7 +50,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [toast]);
 
   const requestPermissionAndSaveToken = async (currentUser: User) => {
-    if (!messaging || !vapidKey || !currentUser) return;
+    if (!messaging || !vapidKey) {
+      if (!vapidKey) {
+        console.warn("AVISO: A variável de ambiente NEXT_PUBLIC_FIREBASE_VAPID_KEY não está definida. As notificações push na web não funcionarão.");
+      }
+      return;
+    }
 
     try {
       const permission = await Notification.requestPermission();
@@ -61,7 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (currentToken) {
           console.log('FCM Token:', currentToken);
           const userDocRef = doc(db, 'users', currentUser.uid);
-          // Set with merge to avoid overwriting other user data
           await setDoc(userDocRef, { 
             fcmTokens: arrayUnion(currentToken) 
           }, { merge: true });

@@ -78,23 +78,27 @@ export async function sendNotification(userId: string, title: string, body: stri
     let successCount = 0;
 
     const iconUrl = 'https://lista-de-limpeza-facil.vercel.app/images/placeholder-icon.png';
+    const appUrl = 'https://lista-de-limpeza-facil.vercel.app/';
 
     const notifications = tokens.map((token: string) => {
-      const msg: admin.messaging.Message = {
-        token,
-        data: {
-          title,
-          body,
-          icon: iconUrl,
-          link: 'https://lista-de-limpeza-facil.vercel.app/'
-        },
+      const message: admin.messaging.Message = {
+        token: token,
         webpush: {
-          headers: {
-            Urgency: 'high',
+          notification: {
+            title: title,
+            body: body,
+            icon: iconUrl,
+          },
+          fcmOptions: {
+             link: appUrl,
           },
         },
+        data: {
+          link: appUrl,
+        }
       };
-      return messaging.send(msg).then(() => {
+
+      return messaging.send(message).then(() => {
         successCount++;
       }).catch((e: any) => {
         if (
@@ -111,8 +115,9 @@ export async function sendNotification(userId: string, title: string, body: stri
     await Promise.all(notifications);
 
     if (invalidTokens.length > 0) {
+      const uniqueInvalidTokens = [...new Set(invalidTokens)];
       await userDocRef.update({
-        fcmTokens: admin.firestore.FieldValue.arrayRemove(...invalidTokens),
+        fcmTokens: admin.firestore.FieldValue.arrayRemove(...uniqueInvalidTokens),
       });
     }
 

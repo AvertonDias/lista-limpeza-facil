@@ -3,7 +3,7 @@
 import React, { createContext, useState, useEffect, ReactNode } from "react";
 import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db } from "@/lib/firebase";
 import { getToken, onMessage } from "firebase/messaging";
-import { doc, setDoc, arrayUnion } from "firebase/firestore";
+import { doc, setDoc, getDoc, arrayUnion } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
@@ -64,9 +64,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (currentToken) {
           console.log('FCM Token:', currentToken);
           const userDocRef = doc(db, 'users', currentUser.uid);
+           // Lógica de desduplicação
+          const userDoc = await getDoc(userDocRef);
+          const existingTokens = userDoc.data()?.fcmTokens || [];
+          const uniqueTokens = [...new Set([currentToken, ...existingTokens])];
+          
           await setDoc(userDocRef, { 
-            fcmTokens: arrayUnion(currentToken) 
+            fcmTokens: uniqueTokens
           }, { merge: true });
+
         } else {
           console.log('No registration token available. Request permission to generate one.');
         }

@@ -63,8 +63,11 @@ export default function PrintPage() {
         <h1 className="font-headline text-2xl font-bold text-gray-800 mb-6">
           Está faltando algum material de limpeza ou algo está quase acabando?
         </h1>
-        <p className="text-lg text-gray-600 mb-8">
-          Escaneie o QR Code abaixo e atualize a minha lista de compras.
+        <p className="text-lg text-gray-600 mb-2">
+          Escaneie o QR Code abaixo para atualizar a minha lista de compras.
+        </p>
+        <p className="text-base text-gray-500 mb-8">
+          Você também pode me enviar sugestões ou tirar dúvidas!
         </p>
 
         <div className="flex justify-center mb-10">

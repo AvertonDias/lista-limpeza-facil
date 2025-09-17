@@ -75,9 +75,10 @@ export async function sendNotification(userId: string, title: string, body: stri
       notification: {
         title,
         body,
+        image: '/images/placeholder-icon.png?v=2'
       },
       data: {
-        link: '/', // para uso interno no service worker
+        link: '/', // Para uso interno
       },
       android: {
         priority: 'high' as const,

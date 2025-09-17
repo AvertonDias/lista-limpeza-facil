@@ -8,11 +8,11 @@ async function initializeFirebaseAdmin() {
     return; // Já inicializado
   }
 
-  const applicationCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+  const applicationCredentials = process.env.NEXT_PUBLIC_GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
   if (!applicationCredentials) {
-    console.error("ERRO CRÍTICO: A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON não foi encontrada. As notificações não funcionarão.");
-    throw new Error("Configuração do servidor incompleta. GOOGLE_APPLICATION_CREDENTIALS_JSON não definida.");
+    console.error("ERRO CRÍTICO: A variável de ambiente NEXT_PUBLIC_GOOGLE_APPLICATION_CREDENTIALS_JSON não foi encontrada. As notificações não funcionarão.");
+    throw new Error("Configuração do servidor incompleta. NEXT_PUBLIC_GOOGLE_APPLICATION_CREDENTIALS_JSON não definida.");
   }
 
   try {
@@ -26,7 +26,7 @@ async function initializeFirebaseAdmin() {
         try {
             serviceAccount = JSON.parse(applicationCredentials);
         } catch (jsonError) {
-             throw new Error(`As credenciais são inválidas. Não foi possível analisá-las como Base64 nem como JSON direto. Verifique se o conteúdo do arquivo de credenciais foi copiado corretamente para a variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON. Erro: ${(jsonError as Error).message}`);
+             throw new Error(`As credenciais são inválidas. Não foi possível analisá-las como Base64 nem como JSON direto. Verifique se o conteúdo do arquivo de credenciais foi copiado corretamente para a variável de ambiente NEXT_PUBLIC_GOOGLE_APPLICATION_CREDENTIALS_JSON. Erro: ${(jsonError as Error).message}`);
         }
     }
     

@@ -45,6 +45,24 @@ interface NotificationResult {
     error?: string;
 }
 
+export async function clearAllFcmTokens(userId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await initializeFirebaseAdmin();
+    if (admin.apps.length === 0) {
+      console.warn("Admin SDK não inicializado, pulando a limpeza de tokens.");
+      return { success: true };
+    }
+    const db = admin.firestore();
+    const userDocRef = db.collection('users').doc(userId);
+    await userDocRef.update({ fcmTokens: [] });
+    console.log(`Todos os tokens FCM para o usuário ${userId} foram removidos.`);
+    return { success: true };
+  } catch (error) {
+    console.error(`Erro ao limpar tokens FCM para o usuário ${userId}:`, error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
 export async function sendNotification(userId: string, title: string, body: string): Promise<NotificationResult> {
   try {
     await initializeFirebaseAdmin();
@@ -104,7 +122,7 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
-            console.log(`Notificação enviada para o token ${index}:`, result.value);
+            console.log(`Notificação enviada com sucesso para o token ${index}.`);
             successCount++;
         } else {
             const error = result.reason;

@@ -5,6 +5,7 @@ import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, cr
 import { getToken, onMessage } from "firebase/messaging";
 import { doc, setDoc, getDoc, arrayUnion } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { clearAllFcmTokens } from "@/lib/fcm";
 
 interface AuthContextType {
   user: User | null;
@@ -63,15 +64,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const currentToken = await getToken(messaging, { vapidKey });
         if (currentToken) {
           console.log('FCM Token:', currentToken);
-          const userDocRef = doc(db, 'users', currentUser.uid);
-           // Lógica de desduplicação
-          const userDoc = await getDoc(userDocRef);
-          const existingTokens = userDoc.data()?.fcmTokens || [];
-          const uniqueTokens = [...new Set([currentToken, ...existingTokens])];
           
+          // Clear all old tokens before saving the new one
+          await clearAllFcmTokens(currentUser.uid);
+
+          const userDocRef = doc(db, 'users', currentUser.uid);
           await setDoc(userDocRef, { 
-            fcmTokens: uniqueTokens
+            fcmTokens: [currentToken] // Save only the new token in an array
           }, { merge: true });
+          console.log('Novo token FCM salvo com sucesso.');
 
         } else {
           console.log('No registration token available. Request permission to generate one.');

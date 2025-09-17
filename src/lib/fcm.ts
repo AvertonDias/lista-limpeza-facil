@@ -77,39 +77,44 @@ export async function sendNotification(userId: string, title: string, body: stri
     const invalidTokens: string[] = [];
     let successCount = 0;
 
-    const iconUrl = 'https://lista-de-limpeza-facil.vercel.app/images/placeholder-icon.png';
-    const appUrl = 'https://lista-de-limpeza-facil.vercel.app/';
-
-    const notifications = tokens.map((token: string) => {
+    const notifications = tokens.map(async (token: string) => {
       const message: admin.messaging.Message = {
         token: token,
+        notification: {
+          title,
+          body,
+        },
+        android: {
+            priority: 'high',
+        },
+        apns: {
+            headers: { 'apns-priority': '10' },
+        },
         webpush: {
           notification: {
-            title: title,
-            body: body,
-            icon: iconUrl,
+            icon: 'https://lista-de-limpeza-facil.vercel.app/images/placeholder-icon.png',
           },
           fcmOptions: {
-             link: appUrl,
-          },
-        },
-        data: {
-          link: appUrl,
+            link: 'https://lista-de-limpeza-facil.vercel.app/',
+          }
         }
       };
 
-      return messaging.send(message).then(() => {
+      try {
+        const response = await messaging.send(message);
+        console.log(`Notification sent to token ${token}:`, response);
         successCount++;
-      }).catch((e: any) => {
+      } catch (e: any) {
         if (
           e.code === 'messaging/invalid-registration-token' ||
           e.code === 'messaging/registration-token-not-registered'
         ) {
+          console.log(`Invalid token found: ${token}`);
           invalidTokens.push(token);
         } else {
-           console.error(`Falha ao enviar para o token ${token}:`, e);
+           console.error(`Failed to send to token ${token}:`, e);
         }
-      });
+      }
     });
 
     await Promise.all(notifications);
@@ -119,9 +124,10 @@ export async function sendNotification(userId: string, title: string, body: stri
       await userDocRef.update({
         fcmTokens: admin.firestore.FieldValue.arrayRemove(...uniqueInvalidTokens),
       });
+      console.log(`Removed ${uniqueInvalidTokens.length} invalid tokens.`);
     }
 
-    console.log(`Notificações enviadas: ${successCount}, Tokens inválidos removidos: ${invalidTokens.length}`);
+    console.log(`Notifications successfully sent: ${successCount}, Invalid tokens removed: ${invalidTokens.length}`);
     return {
       success: true,
       sent: successCount,

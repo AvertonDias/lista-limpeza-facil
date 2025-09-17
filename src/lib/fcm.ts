@@ -139,9 +139,9 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     if (invalidTokens.length > 0) {
       const uniqueInvalidTokens = [...new Set(invalidTokens)];
-      await userDocRef.update({
-        fcmTokens: admin.firestore.FieldValue.arrayRemove(...uniqueInvalidTokens),
-      });
+      const currentTokens = userDoc.data()?.fcmTokens || [];
+      const newTokens = currentTokens.filter((token: string) => !uniqueInvalidTokens.includes(token));
+      await userDocRef.update({ fcmTokens: newTokens });
       console.log(`Removidos ${uniqueInvalidTokens.length} tokens inválidos.`);
     }
 

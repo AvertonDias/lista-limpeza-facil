@@ -5,7 +5,6 @@ import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, cr
 import { getToken, onMessage } from "firebase/messaging";
 import { doc, setDoc, getDoc, arrayUnion } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
-import { clearAllFcmTokens } from "@/lib/fcm";
 
 interface AuthContextType {
   user: User | null;
@@ -21,7 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+  const vapidKey = "BNj19u5aCq_YJzYFf-VnL3h7bBw7J2_pZ-z6X8QjXy7f8R9Jk8Z5gY3C8i5wP4g6v7s5F6e4g3R2Y1s";
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -65,14 +64,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (currentToken) {
           console.log('FCM Token:', currentToken);
           
-          // Clear all old tokens before saving the new one
-          await clearAllFcmTokens(currentUser.uid);
-
           const userDocRef = doc(db, 'users', currentUser.uid);
+          // Adiciona o token ao array 'fcmTokens'. O arrayUnion previne duplicatas.
           await setDoc(userDocRef, { 
-            fcmTokens: [currentToken] // Save only the new token in an array
+            fcmTokens: arrayUnion(currentToken)
           }, { merge: true });
-          console.log('Novo token FCM salvo com sucesso.');
+          console.log('Token FCM salvo/atualizado com sucesso.');
 
         } else {
           console.log('No registration token available. Request permission to generate one.');

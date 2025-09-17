@@ -76,13 +76,13 @@ export async function sendNotification(userId: string, title: string, body: stri
     
     console.log(`Encontrados ${tokens.length} tokens. Tentando enviar notificação para todos.`);
 
-    const messagePayload: admin.messaging.Message = {
-      notification: {
-        title,
-        body,
-      },
-       android: {
-            priority: 'high',
+    const messagePayload = {
+        notification: {
+            title,
+            body,
+        },
+        android: {
+            priority: 'high' as const,
         },
         apns: {
             headers: { 'apns-priority': '10' },
@@ -105,11 +105,11 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
-            console.log(`Notificação enviada para o token ${index + 1}/${tokens.length}:`, result.value);
+            console.log(`Notificação enviada para o token ${index}:`, result.value);
             successCount++;
         } else {
             const error = result.reason;
-            console.error(`Falha ao enviar para o token ${tokens[index]}:`, error.errorInfo);
+            console.error(`Falha ao enviar para o token ${index}:`, error.errorInfo);
             if (
               error.code === 'messaging/invalid-registration-token' ||
               error.code === 'messaging/registration-token-not-registered'

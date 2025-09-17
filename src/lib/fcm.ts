@@ -2,10 +2,9 @@
 
 import { admin } from './firebaseAdmin';
 
-// Função auxiliar para inicializar o Firebase Admin SDK sob demanda.
 async function initializeFirebaseAdmin() {
   if (admin.apps.length > 0) {
-    return; // Já inicializado
+    return;
   }
 
   const applicationCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
@@ -17,12 +16,9 @@ async function initializeFirebaseAdmin() {
   
   try {
     let serviceAccount;
-    // Tenta primeiro decodificar de Base64, que é o caso de uso comum em ambientes de produção.
     try {
         serviceAccount = JSON.parse(Buffer.from(applicationCredentials, 'base64').toString('utf8'));
     } catch (e) {
-        // Se a decodificação Base64 falhar, tenta analisar diretamente como JSON.
-        // Isso cobre o caso em que a variável de ambiente contém o JSON bruto.
         try {
             serviceAccount = JSON.parse(applicationCredentials);
         } catch (jsonError) {
@@ -49,13 +45,9 @@ interface NotificationResult {
 
 export async function sendNotification(userId: string, title: string, body: string): Promise<NotificationResult> {
   try {
-    // Garante que o SDK Admin está inicializado antes de prosseguir.
     await initializeFirebaseAdmin();
 
-    // Se a inicialização falhou (p. ex. credenciais ausentes), não prossiga.
     if (admin.apps.length === 0) {
-      // Retorna sucesso para não mostrar erro ao usuário, pois o app principal funciona.
-      // O aviso sobre as credenciais já foi logado no servidor.
       return { success: true, sent: 0, removed: 0, error: 'Admin SDK not initialized' };
     }
 
@@ -71,30 +63,24 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     const tokens = userDoc.data()?.fcmTokens || [];
     if (tokens.length === 0) {
-      return { success: true, sent: 0, removed: 0 }; // Não é um erro, apenas não há onde enviar.
+      return { success: true, sent: 0, removed: 0 };
     }
     
     console.log(`Encontrados ${tokens.length} tokens. Tentando enviar notificação para todos.`);
 
     const messagePayload = {
-        notification: {
-            title,
-            body,
-        },
-        android: {
-            priority: 'high' as const,
-        },
-        apns: {
-            headers: { 'apns-priority': '10' },
-        },
-        webpush: {
-          notification: {
-            icon: '/images/placeholder-icon.png?v=2',
-          },
-          fcmOptions: {
-            link: '/',
-          }
-        }
+      data: {
+        title,
+        body,
+        icon: '/images/placeholder-icon.png?v=2',
+        link: '/',
+      },
+      android: {
+        priority: 'high' as const,
+      },
+      apns: {
+          headers: { 'apns-priority': '10' },
+      },
     };
 
     const sendPromises = tokens.map((token: string) => messaging.send({ ...messagePayload, token }));

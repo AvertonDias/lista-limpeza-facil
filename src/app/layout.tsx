@@ -6,8 +6,11 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Lista de Limpeza Fácil",
   description: "Gerencie sua lista de compras de limpeza de forma fácil e organizada.",
-  // O manifesto e os ícones relacionados a PWA são gerenciados pelo next-pwa em produção.
-  // Removê-los daqui evita erros de CORS no ambiente de desenvolvimento.
+  manifest: "/manifest.json",
+  icons: {
+    apple: "/images/placeholder-icon.png?v=2",
+    icon: "/images/placeholder-icon.png?v=2",
+  },
 };
 
 export const viewport: Viewport = {
@@ -26,7 +29,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&display=swap" rel="stylesheet" />
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
-        <link rel="apple-touch-icon" href="/images/placeholder-icon.png?v=2" />
       </head>
       <body className="font-body antialiased">
         <AuthProvider>

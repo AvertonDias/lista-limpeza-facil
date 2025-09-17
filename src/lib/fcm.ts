@@ -73,6 +73,8 @@ export async function sendNotification(userId: string, title: string, body: stri
     if (tokens.length === 0) {
       return { success: true, sent: 0, removed: 0 }; // Não é um erro, apenas não há onde enviar.
     }
+    
+    console.log(`Encontrados ${tokens.length} tokens. Tentando enviar notificação para todos.`);
 
     const messagePayload: admin.messaging.Message = {
       notification: {
@@ -103,11 +105,11 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     results.forEach((result, index) => {
         if (result.status === 'fulfilled') {
-            console.log(`Notification sent to token ${tokens[index]}:`, result.value);
+            console.log(`Notificação enviada para o token ${index + 1}/${tokens.length}:`, result.value);
             successCount++;
         } else {
             const error = result.reason;
-            console.error(`Failed to send to token ${tokens[index]}:`, error.errorInfo);
+            console.error(`Falha ao enviar para o token ${tokens[index]}:`, error.errorInfo);
             if (
               error.code === 'messaging/invalid-registration-token' ||
               error.code === 'messaging/registration-token-not-registered'
@@ -122,10 +124,10 @@ export async function sendNotification(userId: string, title: string, body: stri
       await userDocRef.update({
         fcmTokens: admin.firestore.FieldValue.arrayRemove(...uniqueInvalidTokens),
       });
-      console.log(`Removed ${uniqueInvalidTokens.length} invalid tokens.`);
+      console.log(`Removidos ${uniqueInvalidTokens.length} tokens inválidos.`);
     }
 
-    console.log(`Notifications successfully sent: ${successCount}, Invalid tokens removed: ${invalidTokens.length}`);
+    console.log(`Resultado final: ${successCount} notificações enviadas com sucesso, ${invalidTokens.length} tokens inválidos removidos.`);
     return {
       success: true,
       sent: successCount,

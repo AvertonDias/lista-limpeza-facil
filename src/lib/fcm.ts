@@ -11,9 +11,8 @@ async function initializeFirebaseAdmin() {
   const applicationCredentials = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
 
   if (!applicationCredentials) {
-    const errorMessage = "A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON não foi encontrada. Verifique se ela está definida no arquivo .env ou .env.local e reinicie o servidor de desenvolvimento.";
-    console.error(`ERRO CRÍTICO: ${errorMessage}`);
-    throw new Error(errorMessage);
+    console.warn("AVISO: A variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON não foi encontrada. As notificações push não funcionarão. Verifique se ela está definida no arquivo .env ou .env.local e reinicie o servidor de desenvolvimento.");
+    return;
   }
   
   try {
@@ -52,6 +51,13 @@ export async function sendNotification(userId: string, title: string, body: stri
   try {
     // Garante que o SDK Admin está inicializado antes de prosseguir.
     await initializeFirebaseAdmin();
+
+    // Se a inicialização falhou (p. ex. credenciais ausentes), não prossiga.
+    if (admin.apps.length === 0) {
+      // Retorna sucesso para não mostrar erro ao usuário, pois o app principal funciona.
+      // O aviso sobre as credenciais já foi logado no servidor.
+      return { success: true, sent: 0, removed: 0, error: 'Admin SDK not initialized' };
+    }
 
     const db = admin.firestore();
     const messaging = admin.messaging();

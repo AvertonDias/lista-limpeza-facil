@@ -42,8 +42,8 @@ async function initializeFirebaseAdmin() {
 
 interface NotificationResult {
     success: boolean;
-    sent?: number;
-    removed?: number;
+    sent: number;
+    removed: number;
     error?: string;
 }
 
@@ -66,7 +66,7 @@ export async function sendNotification(userId: string, title: string, body: stri
     const userDoc = await userDocRef.get();
 
     if (!userDoc.exists) {
-      return { success: false, error: 'Usuário não encontrado' };
+      return { success: false, sent: 0, removed: 0, error: 'Usuário não encontrado' };
     }
 
     const tokens = userDoc.data()?.fcmTokens || [];
@@ -74,17 +74,12 @@ export async function sendNotification(userId: string, title: string, body: stri
       return { success: true, sent: 0, removed: 0 }; // Não é um erro, apenas não há onde enviar.
     }
 
-    const invalidTokens: string[] = [];
-    let successCount = 0;
-
-    const notifications = tokens.map(async (token: string) => {
-      const message: admin.messaging.Message = {
-        token: token,
-        notification: {
-          title,
-          body,
-        },
-        android: {
+    const messagePayload: admin.messaging.Message = {
+      notification: {
+        title,
+        body,
+      },
+       android: {
             priority: 'high',
         },
         apns: {
@@ -92,32 +87,35 @@ export async function sendNotification(userId: string, title: string, body: stri
         },
         webpush: {
           notification: {
-            icon: 'https://lista-de-limpeza-facil.vercel.app/images/placeholder-icon.png',
+            icon: '/images/placeholder-icon.png?v=2',
           },
           fcmOptions: {
-            link: 'https://lista-de-limpeza-facil.vercel.app/',
+            link: '/',
           }
         }
-      };
+    };
 
-      try {
-        const response = await messaging.send(message);
-        console.log(`Notification sent to token ${token}:`, response);
-        successCount++;
-      } catch (e: any) {
-        if (
-          e.code === 'messaging/invalid-registration-token' ||
-          e.code === 'messaging/registration-token-not-registered'
-        ) {
-          console.log(`Invalid token found: ${token}`);
-          invalidTokens.push(token);
+    const sendPromises = tokens.map((token: string) => messaging.send({ ...messagePayload, token }));
+    const results = await Promise.allSettled(sendPromises);
+
+    const invalidTokens: string[] = [];
+    let successCount = 0;
+
+    results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+            console.log(`Notification sent to token ${tokens[index]}:`, result.value);
+            successCount++;
         } else {
-           console.error(`Failed to send to token ${token}:`, e);
+            const error = result.reason;
+            console.error(`Failed to send to token ${tokens[index]}:`, error.errorInfo);
+            if (
+              error.code === 'messaging/invalid-registration-token' ||
+              error.code === 'messaging/registration-token-not-registered'
+            ) {
+              invalidTokens.push(tokens[index]);
+            }
         }
-      }
     });
-
-    await Promise.all(notifications);
 
     if (invalidTokens.length > 0) {
       const uniqueInvalidTokens = [...new Set(invalidTokens)];
@@ -135,6 +133,6 @@ export async function sendNotification(userId: string, title: string, body: stri
     };
   } catch (error) {
      console.error("Erro geral em sendNotification:", error);
-     return { success: false, error: (error as Error).message };
+     return { success: false, sent: 0, removed: 0, error: (error as Error).message };
   }
 }

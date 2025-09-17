@@ -1,33 +1,3 @@
-
-// Scripts da Firebase
-importScripts("https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js");
-
-// Cole aqui a configuração do seu Firebase que está em src/lib/firebase.ts
-const firebaseConfig = {
-  apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
-  authDomain: "studio-1326322560-ad791.firebaseapp.com",
-  projectId: "studio-1326322560-ad791",
-  storageBucket: "studio-1326322560-ad791.firebasestorage.app",
-  messagingSenderId: "417616889091",
-  appId: "1:417616889091:web:f2c93816e5eaec7ff4d536"
-};
-
-firebase.initializeApp(firebaseConfig);
-
-const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage((payload) => {
-  console.log(
-    "[firebase-messaging-sw.js] Received background message ",
-    payload
-  );
-  
-  const notificationTitle = payload.data.title;
-  const notificationOptions = {
-    body: payload.data.body,
-    icon: payload.data.icon || "/images/placeholder-icon.png?v=2",
-  };
-
-  self.registration.showNotification(notificationTitle, notificationOptions);
-});
+// This file is intentionally blank.
+// The content will be dynamically injected by next-pwa.
+// See next.config.ts for the configuration.

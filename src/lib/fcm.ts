@@ -17,10 +17,12 @@ async function initializeFirebaseAdmin() {
   try {
     let serviceAccount;
     try {
-        serviceAccount = JSON.parse(applicationCredentials);
+        // First, try to parse it as Base64-encoded JSON
+        serviceAccount = JSON.parse(Buffer.from(applicationCredentials, 'base64').toString('utf8'));
     } catch (e) {
         try {
-            serviceAccount = JSON.parse(Buffer.from(applicationCredentials, 'base64').toString('utf8'));
+            // If that fails, try to parse it as a direct JSON string
+            serviceAccount = JSON.parse(applicationCredentials);
         } catch (jsonError) {
              throw new Error(`As credenciais são inválidas. Não foi possível analisá-las como JSON direto nem como Base64. Verifique se o conteúdo do arquivo de credenciais foi copiado corretamente para a variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON. Erro: ${(jsonError as Error).message}`);
         }
@@ -73,11 +75,9 @@ export async function sendNotification(userId: string, title: string, body: stri
       notification: {
         title,
         body,
-        // Opcional: Adicionar uma imagem para notificações mais ricas
-        // imageUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/images/placeholder-icon.png?v=2`
       },
       data: {
-        link: '/', // Dados extras para quando o app processar o clique
+        link: '/', // para uso interno no service worker
       },
       android: {
         priority: 'high' as const,

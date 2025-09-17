@@ -61,7 +61,7 @@ export default function PrintPage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4 print:bg-white print:p-0 print:m-0 print:min-h-0">
       <div className="w-full max-w-lg text-center p-8 bg-white rounded-lg shadow-2xl print:shadow-none print:p-4">
         <h1 className="font-headline text-2xl font-bold text-gray-800 mb-6">
-          Está faltando algum material de limpeza?
+          Está faltando algum material de limpeza ou algo está quase acabando?
         </h1>
         <p className="text-lg text-gray-600 mb-8">
           Escaneie o QR Code abaixo e atualize a minha lista de compras.

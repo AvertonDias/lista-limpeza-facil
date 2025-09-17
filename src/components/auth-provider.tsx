@@ -20,8 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const vapidKey = "BNj19u5aCq_YJzYFf-VnL3h7bBw7J2_pZ-z6X8QjXy7f8R9Jk8Z5gY3C8i5wP4g6v7s5F6e4g3R2Y1s";
-
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
@@ -50,17 +49,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [toast]);
 
   const requestPermissionAndSaveToken = async (currentUser: User) => {
-    if (!messaging || !vapidKey) {
-      if (!vapidKey) {
-        console.warn("AVISO: A variável de ambiente NEXT_PUBLIC_FIREBASE_VAPID_KEY não está definida. As notificações push na web não funcionarão.");
-      }
+    if (!messaging) {
       return;
     }
 
     try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        const currentToken = await getToken(messaging, { vapidKey });
+        // O SDK do Firebase pode obter as credenciais necessárias da configuração do projeto,
+        // remover a passagem explícita da vapidKey resolve o problema de autenticação.
+        const currentToken = await getToken(messaging);
         if (currentToken) {
           console.log('FCM Token:', currentToken);
           

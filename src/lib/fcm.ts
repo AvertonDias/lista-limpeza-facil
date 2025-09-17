@@ -17,12 +17,12 @@ async function initializeFirebaseAdmin() {
   try {
     let serviceAccount;
     try {
-        serviceAccount = JSON.parse(Buffer.from(applicationCredentials, 'base64').toString('utf8'));
+        serviceAccount = JSON.parse(applicationCredentials);
     } catch (e) {
         try {
-            serviceAccount = JSON.parse(applicationCredentials);
+            serviceAccount = JSON.parse(Buffer.from(applicationCredentials, 'base64').toString('utf8'));
         } catch (jsonError) {
-             throw new Error(`As credenciais são inválidas. Não foi possível analisá-las como Base64 nem como JSON direto. Verifique se o conteúdo do arquivo de credenciais foi copiado corretamente para a variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON. Erro: ${(jsonError as Error).message}`);
+             throw new Error(`As credenciais são inválidas. Não foi possível analisá-las como JSON direto nem como Base64. Verifique se o conteúdo do arquivo de credenciais foi copiado corretamente para a variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON. Erro: ${(jsonError as Error).message}`);
         }
     }
     
@@ -48,7 +48,8 @@ export async function sendNotification(userId: string, title: string, body: stri
     await initializeFirebaseAdmin();
 
     if (admin.apps.length === 0) {
-      return { success: true, sent: 0, removed: 0, error: 'Admin SDK not initialized' };
+      console.warn("Admin SDK não inicializado, pulando envio de notificação.");
+      return { success: true, sent: 0, removed: 0 };
     }
 
     const db = admin.firestore();
@@ -69,11 +70,12 @@ export async function sendNotification(userId: string, title: string, body: stri
     console.log(`Encontrados ${tokens.length} tokens. Tentando enviar notificação para todos.`);
 
     const messagePayload = {
-      data: {
+      notification: {
         title,
         body,
-        icon: '/images/placeholder-icon.png?v=2',
-        link: '/',
+      },
+      data: {
+        link: '/', // Dados extras para quando o app processar o clique
       },
       android: {
         priority: 'high' as const,
@@ -81,6 +83,14 @@ export async function sendNotification(userId: string, title: string, body: stri
       apns: {
           headers: { 'apns-priority': '10' },
       },
+      webpush: {
+        notification: {
+            icon: '/images/placeholder-icon.png?v=2',
+        },
+        fcm_options: {
+            link: '/',
+        }
+      }
     };
 
     const sendPromises = tokens.map((token: string) => messaging.send({ ...messagePayload, token }));
@@ -96,9 +106,10 @@ export async function sendNotification(userId: string, title: string, body: stri
         } else {
             const error = result.reason;
             console.error(`Falha ao enviar para o token ${index}:`, error.errorInfo);
+            const errorCode = error?.code;
             if (
-              error.code === 'messaging/invalid-registration-token' ||
-              error.code === 'messaging/registration-token-not-registered'
+              errorCode === 'messaging/invalid-registration-token' ||
+              errorCode === 'messaging/registration-token-not-registered'
             ) {
               invalidTokens.push(tokens[index]);
             }

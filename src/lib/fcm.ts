@@ -73,6 +73,8 @@ export async function sendNotification(userId: string, title: string, body: stri
       notification: {
         title,
         body,
+        // Opcional: Adicionar uma imagem para notificações mais ricas
+        // imageUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/images/placeholder-icon.png?v=2`
       },
       data: {
         link: '/', // Dados extras para quando o app processar o clique

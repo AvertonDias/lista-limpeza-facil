@@ -482,7 +482,7 @@ export default function DashboardPage() {
                   </div>
               ) : (
                   <div className="text-center text-muted-foreground py-16">
-                      <p className="text-lg">{searchQuery ? "Nenhum item encontrado." : "Nenhum item cadastrado."}</p>
+                      <p className="text-lg">{searchQuery ? "Nenhum item encontrado." : "Tente uma busca diferente."}</p>
                       <p>{searchQuery ? "Tente uma busca diferente." : "Clique em 'Adicionar Item' para começar."}</p>
                   </div>
               )}

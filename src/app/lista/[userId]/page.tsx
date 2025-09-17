@@ -57,7 +57,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { sendNotification } from '@/lib/fcm';
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -210,16 +209,6 @@ export default function PublicListPage() {
         title: "Item Adicionado!",
         description: `${item.name} foi adicionado à lista de compras.`,
         });
-        
-        // Send notification and handle response
-        const notificationResult = await sendNotification(userId, 'Novo Item na Lista!', `O item "${item.name}" foi adicionado à sua lista.`);
-        if (!notificationResult.success) {
-            toast({
-                variant: "destructive",
-                title: "Erro de Notificação",
-                description: `O item foi adicionado, mas a notificação falhou: ${notificationResult.error}`,
-            });
-        }
     }
   };
 
@@ -243,16 +232,6 @@ export default function PublicListPage() {
       title: "Item Adicionado!",
       description: `${newItem.name} foi adicionado à lista.`,
     });
-
-    // Send notification and handle response
-    const notificationResult = await sendNotification(userId, 'Novo Item na Lista!', `O item "${newItem.name}" (avulso) foi adicionado à sua lista.`);
-    if (!notificationResult.success) {
-        toast({
-            variant: "destructive",
-            title: "Erro de Notificação",
-            description: `O item foi adicionado, mas a notificação falhou: ${notificationResult.error}`,
-        });
-    }
 
     setCustomItemName("");
   };
@@ -286,19 +265,6 @@ export default function PublicListPage() {
         title: "Mensagem Enviada!",
         description: "Obrigado pelo seu feedback.",
       });
-
-      // Send notification and handle response
-      const notificationTitle = feedbackType === 'doubt' ? `Nova Dúvida de ${feedbackName}` : 'Nova Sugestão Recebida';
-      const notificationBody = feedbackText.substring(0, 100) + (feedbackText.length > 100 ? '...' : '');
-      const notificationResult = await sendNotification(userId, notificationTitle, notificationBody);
-      if (!notificationResult.success) {
-          toast({
-              variant: "destructive",
-              title: "Erro de Notificação",
-              description: `Sua mensagem foi enviada, mas a notificação falhou: ${notificationResult.error}`,
-          });
-      }
-
 
       setIsFeedbackModalOpen(false);
       setFeedbackType(null);

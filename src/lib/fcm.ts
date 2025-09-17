@@ -26,7 +26,7 @@ async function initializeFirebaseAdmin() {
         try {
             serviceAccount = JSON.parse(applicationCredentials);
         } catch (jsonError) {
-             throw new Error(`As credenciais são inválidas. Não foi possível analisá-las como Base64 nem como JSON direto. Verifique o formato de GOOGLE_APPLICATION_CREDENTIALS_JSON. Erro: ${(jsonError as Error).message}`);
+             throw new Error(`As credenciais são inválidas. Não foi possível analisá-las como Base64 nem como JSON direto. Verifique se o conteúdo do arquivo de credenciais foi copiado corretamente para a variável de ambiente GOOGLE_APPLICATION_CREDENTIALS_JSON. Erro: ${(jsonError as Error).message}`);
         }
     }
     

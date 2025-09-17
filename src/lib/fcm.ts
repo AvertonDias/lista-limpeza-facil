@@ -17,12 +17,17 @@ async function initializeFirebaseAdmin() {
 
   try {
     let serviceAccount;
+    // Tenta primeiro decodificar de Base64, que é o caso de uso comum em ambientes de produção.
     try {
-        // Tenta analisar diretamente como JSON
-        serviceAccount = JSON.parse(applicationCredentials);
-    } catch (e) {
-        // Se falhar, tenta decodificar de Base64
         serviceAccount = JSON.parse(Buffer.from(applicationCredentials, 'base64').toString('utf8'));
+    } catch (e) {
+        // Se a decodificação Base64 falhar, tenta analisar diretamente como JSON.
+        // Isso cobre o caso em que a variável de ambiente contém o JSON bruto.
+        try {
+            serviceAccount = JSON.parse(applicationCredentials);
+        } catch (jsonError) {
+             throw new Error(`As credenciais são inválidas. Não foi possível analisá-las como Base64 nem como JSON direto. Verifique o formato de GOOGLE_APPLICATION_CREDENTIALS_JSON. Erro: ${(jsonError as Error).message}`);
+        }
     }
     
     admin.initializeApp({
@@ -30,7 +35,7 @@ async function initializeFirebaseAdmin() {
     });
     console.log("Firebase Admin SDK inicializado sob demanda com sucesso.");
   } catch (error) {
-    console.error("ERRO CRÍTICO: Falha ao inicializar o Firebase Admin SDK. Verifique o conteúdo de GOOGLE_APPLICATION_CREDENTIALS_JSON.", error);
+    console.error("ERRO CRÍTICO: Falha ao inicializar o Firebase Admin SDK.", error);
     throw new Error(`Falha na inicialização do servidor: ${(error as Error).message}`);
   }
 }
@@ -54,13 +59,11 @@ export async function sendNotification(userId: string, title: string, body: stri
     const userDoc = await userDocRef.get();
 
     if (!userDoc.exists) {
-      console.log(`Usuário ${userId} não encontrado para notificação.`);
       return { success: false, error: 'Usuário não encontrado' };
     }
 
     const tokens = userDoc.data()?.fcmTokens || [];
     if (tokens.length === 0) {
-      console.log(`Nenhum token FCM encontrado para o usuário ${userId}.`);
       return { success: true, sent: 0, removed: 0 }; // Não é um erro, apenas não há onde enviar.
     }
 

@@ -35,8 +35,10 @@ export async function clearAllFcmTokens(userId: string): Promise<{ success: bool
     }
     const db = getFirestore();
     const userDocRef = db.collection('users').doc(userId);
-    await userDocRef.update({ fcmTokens: FieldValue.delete() });
-    console.log(`Todos os tokens FCM para o usuário ${userId} foram removidos.`);
+    // Em vez de deletar o campo, o substituímos por um array vazio.
+    // Isso evita condições de corrida onde o campo pode não existir quando sendNotification é chamado.
+    await userDocRef.update({ fcmTokens: [] });
+    console.log(`Tokens FCM para o usuário ${userId} foram resetados para um array vazio.`);
     return { success: true };
   } catch (error) {
     console.error(`Erro ao limpar tokens FCM para o usuário ${userId}:`, error);

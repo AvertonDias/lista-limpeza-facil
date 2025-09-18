@@ -9,9 +9,9 @@ async function initializeFirebaseAdmin() {
     return;
   }
   
+  // No App Hosting, as credenciais são gerenciadas automaticamente pelo ambiente.
+  // Chamar initializeApp() sem argumentos é a maneira correta se o GOOGLE_APPLICATION_CREDENTIALS estiver configurado no ambiente Vercel.
   try {
-    // No App Hosting, as credenciais são gerenciadas automaticamente pelo ambiente.
-    // Chamar initializeApp() sem argumentos é a maneira correta.
     admin.initializeApp();
     console.log("Firebase Admin SDK inicializado com sucesso.");
   } catch (error) {
@@ -31,7 +31,7 @@ export async function sendNotification(userId: string, title: string, body: stri
   await initializeFirebaseAdmin();
 
   if (admin.apps.length === 0) {
-    const errorMessage = "Admin SDK não inicializado, pulando envio de notificação.";
+    const errorMessage = "Admin SDK não inicializado, pulando envio de notificação. Verifique as credenciais do servidor no ambiente de hospedagem.";
     console.warn(errorMessage);
     return { success: false, sent: 0, removed: 0, error: errorMessage };
   }
@@ -49,7 +49,7 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     const tokens = userDoc.data()?.fcmTokens || [];
     if (tokens.length === 0) {
-      return { success: true, sent: 0, removed: 0 }; // Nenhum token para enviar, mas não é um erro.
+      return { success: true, sent: 0, removed: 0, error: 'Nenhum token de notificação encontrado para este usuário.' };
     }
     
     const messagePayload = {
@@ -74,6 +74,7 @@ export async function sendNotification(userId: string, title: string, body: stri
         const error = result.error;
         if (error) {
             console.error(`Falha ao enviar para o token ${tokens[index]}:`, error);
+            // Identifica tokens que são inválidos e devem ser removidos.
             if (
               error.code === 'messaging/invalid-registration-token' ||
               error.code === 'messaging/registration-token-not-registered'
@@ -83,6 +84,7 @@ export async function sendNotification(userId: string, title: string, body: stri
         }
     });
 
+    // Se houver tokens inválidos, remove-os do Firestore.
     if (tokensToRemove.length > 0) {
       const { FieldValue } = await import('firebase-admin/firestore');
       await userDocRef.update({

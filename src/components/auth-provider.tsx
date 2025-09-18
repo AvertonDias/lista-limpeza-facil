@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from "react";
-import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db } from "@/lib/firebase";
+import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db, clearAllFcmTokens } from "@/lib/firebase";
 import { getToken, onMessage } from "firebase/messaging";
 import { doc, setDoc, arrayUnion } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
@@ -51,25 +51,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const requestPermissionAndSaveToken = async (currentUser: User) => {
     if (!messaging) {
+      console.log('Firebase Messaging is not available.');
       return;
     }
-
+  
     try {
+      // Limpa os tokens antigos antes de solicitar um novo.
+      await clearAllFcmTokens(currentUser.uid);
+  
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        // O SDK do Firebase pode obter as credenciais necessárias da configuração do projeto,
-        // remover a passagem explícita da vapidKey resolve o problema de autenticação.
         const currentToken = await getToken(messaging);
         if (currentToken) {
           console.log('FCM Token:', currentToken);
           
           const userDocRef = doc(db, 'users', currentUser.uid);
-          // Adiciona o token ao array 'fcmTokens'. O arrayUnion previne duplicatas.
+          // Adiciona o novo token ao array 'fcmTokens'.
           await setDoc(userDocRef, { 
             fcmTokens: arrayUnion(currentToken)
           }, { merge: true });
           console.log('Token FCM salvo/atualizado com sucesso.');
-
+  
         } else {
           console.log('No registration token available. Request permission to generate one.');
         }

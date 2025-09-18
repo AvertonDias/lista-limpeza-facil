@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/a
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, createUserWithEmailAndPassword, UserCredential } from "firebase/auth";
 import { getFirestore, arrayRemove, arrayUnion } from "firebase/firestore";
 import { getMessaging, getToken, deleteToken } from "firebase/messaging";
+import { clearAllFcmTokens } from "./fcm";
 
 export const firebaseConfig: FirebaseOptions = {
   apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
@@ -21,5 +22,5 @@ const db = getFirestore(app);
 const messaging = (typeof window !== 'undefined') ? getMessaging(app) : null;
 
 
-export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, getToken, deleteToken, arrayRemove, arrayUnion };
+export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, getToken, deleteToken, arrayRemove, arrayUnion, clearAllFcmTokens };
 export type { User, UserCredential };

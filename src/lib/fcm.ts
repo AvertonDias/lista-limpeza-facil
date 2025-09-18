@@ -2,7 +2,7 @@
 'use server';
 
 import { admin } from './firebaseAdmin';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 async function initializeFirebaseAdmin() {
   if (admin.apps.length > 0) {
@@ -10,7 +10,6 @@ async function initializeFirebaseAdmin() {
   }
   
   // No App Hosting, as credenciais são gerenciadas automaticamente pelo ambiente.
-  // Chamar initializeApp() sem argumentos é a maneira correta se o GOOGLE_APPLICATION_CREDENTIALS estiver configurado no ambiente Vercel.
   try {
     admin.initializeApp();
     console.log("Firebase Admin SDK inicializado com sucesso.");
@@ -27,6 +26,25 @@ interface NotificationResult {
     error?: string;
 }
 
+export async function clearAllFcmTokens(userId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    await initializeFirebaseAdmin();
+    if (admin.apps.length === 0) {
+      console.warn("Admin SDK não inicializado, pulando a limpeza de tokens.");
+      return { success: true }; // Retorna sucesso para não bloquear o fluxo do cliente
+    }
+    const db = getFirestore();
+    const userDocRef = db.collection('users').doc(userId);
+    await userDocRef.update({ fcmTokens: FieldValue.delete() });
+    console.log(`Todos os tokens FCM para o usuário ${userId} foram removidos.`);
+    return { success: true };
+  } catch (error) {
+    console.error(`Erro ao limpar tokens FCM para o usuário ${userId}:`, error);
+    return { success: false, error: (error as Error).message };
+  }
+}
+
+
 export async function sendNotification(userId: string, title: string, body: string): Promise<NotificationResult> {
   await initializeFirebaseAdmin();
 
@@ -41,7 +59,7 @@ export async function sendNotification(userId: string, title: string, body: stri
     const messaging = admin.messaging();
     
     const userDocRef = db.collection('users').doc(userId);
-    const userDoc = await userDocRef.get();
+    const userDoc = await userDoc.get();
 
     if (!userDoc.exists) {
       return { success: false, sent: 0, removed: 0, error: 'Usuário não encontrado' };
@@ -86,7 +104,6 @@ export async function sendNotification(userId: string, title: string, body: stri
 
     // Se houver tokens inválidos, remove-os do Firestore.
     if (tokensToRemove.length > 0) {
-      const { FieldValue } = await import('firebase-admin/firestore');
       await userDocRef.update({
         fcmTokens: FieldValue.arrayRemove(...tokensToRemove)
       });

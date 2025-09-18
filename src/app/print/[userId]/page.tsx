@@ -12,13 +12,13 @@ export default function PrintPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const userId = params.userId as string;
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (typeof window !== "undefined" && userId) {
       const publicUrl = `${window.location.origin}/lista/${userId}`;
       setUrl(publicUrl);
       setLoading(false);
@@ -34,6 +34,7 @@ export default function PrintPage() {
   }
 
   const handleCopyLink = () => {
+    if (!url) return;
     navigator.clipboard.writeText(url).then(() => {
       toast({
         title: "Link Copiado!",

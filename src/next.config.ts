@@ -6,6 +6,13 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  experimental: {
+    // This allows the Next.js dev server to accept requests from the
+    // Firebase Studio environment.
+    allowedDevOrigins: [
+      "https://*.cluster-hlmk2l2htragyudeyf6f3tzsi6.cloudworkstations.dev",
+    ],
+  },
   images: {
     remotePatterns: [
       {
@@ -45,4 +52,6 @@ const pwaConfig = {
   sw: 'firebase-messaging-sw.js',
 }
 
-export default withPWA(pwaConfig)(nextConfig);
+const withPwaPlugin = withPWA(pwaConfig);
+
+export default process.env.NODE_ENV === 'development' ? nextConfig : withPwaPlugin(nextConfig);

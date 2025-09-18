@@ -9,7 +9,9 @@ async function initializeFirebaseAdmin() {
     return;
   }
   
-  // No App Hosting, as credenciais são gerenciadas automaticamente pelo ambiente.
+  // Em ambientes de hospedagem do Google Cloud (como App Hosting ou Vercel com integrações),
+  // as credenciais são gerenciadas automaticamente pelo ambiente.
+  // Chamar initializeApp() sem argumentos é a maneira correta.
   try {
     admin.initializeApp();
     console.log("Firebase Admin SDK inicializado com sucesso.");
@@ -61,7 +63,7 @@ export async function sendNotification(userId: string, title: string, body: stri
     const messaging = admin.messaging();
     
     const userDocRef = db.collection('users').doc(userId);
-    const userDoc = await userDoc.get();
+    const userDoc = await userDocRef.get();
 
     if (!userDoc.exists) {
       return { success: false, sent: 0, removed: 0, error: 'Usuário não encontrado' };

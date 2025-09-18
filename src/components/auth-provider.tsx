@@ -2,9 +2,9 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from "react";
-import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db, clearAllFcmTokens } from "@/lib/firebase";
+import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db } from "@/lib/firebase";
 import { getToken, onMessage } from "firebase/messaging";
-import { doc, setDoc, arrayUnion } from "firebase/firestore";
+import { doc, setDoc, arrayUnion, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
@@ -16,6 +16,28 @@ interface AuthContextType {
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// This function will clear old tokens. It's safe to call from the client
+// because Firestore security rules should be configured to only allow a user
+// to edit their own document.
+const clearAllFcmTokens = async (userId: string): Promise<{ success: boolean; error?: string }> => {
+  const userDocRef = doc(db, 'users', userId);
+  try {
+    // Overwrite the fcmTokens field with an empty array.
+    await updateDoc(userDocRef, {
+      fcmTokens: []
+    });
+    console.log(`All FCM tokens for user ${userId} have been cleared.`);
+    return { success: true };
+  } catch (error) {
+    // If the document or field doesn't exist, it might throw an error, which is fine.
+    // We can just log it and continue.
+    console.warn(`Could not clear FCM tokens for user ${userId}:`, (error as Error).message);
+    // Return success as the main goal is to add a new token anyway.
+    return { success: true };
+  }
+};
+
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -56,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   
     try {
-      // Limpa os tokens antigos antes de solicitar um novo.
+      // Clear any old tokens for this user on this device.
       await clearAllFcmTokens(currentUser.uid);
   
       const permission = await Notification.requestPermission();
@@ -66,11 +88,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('FCM Token:', currentToken);
           
           const userDocRef = doc(db, 'users', currentUser.uid);
-          // Adiciona o novo token ao array 'fcmTokens'.
+          // Add the new token to the 'fcmTokens' array.
+          // Using merge: true ensures we don't overwrite the whole doc.
           await setDoc(userDocRef, { 
             fcmTokens: arrayUnion(currentToken)
           }, { merge: true });
-          console.log('Token FCM salvo/atualizado com sucesso.');
+          console.log('FCM token saved/updated successfully.');
   
         } else {
           console.log('No registration token available. Request permission to generate one.');

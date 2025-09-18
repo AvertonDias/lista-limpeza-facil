@@ -1,25 +1,17 @@
-// Scripts for firebase and firebase messaging
-importScripts("https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js");
-importScripts("https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js");
+// Import the Firebase app and messaging packages
+import { initializeApp } from 'firebase/app';
+import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
+import { firebaseConfig } from '../src/lib/firebase';
 
-// Initialize the Firebase app in the service worker with your project config
-const firebaseConfig = {
-  apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
-  authDomain: "studio-1326322560-ad791.firebaseapp.com",
-  projectId: "studio-1326322560-ad791",
-  storageBucket: "studio-1326322560-ad791.firebasestorage.app",
-  messagingSenderId: "417616889091",
-  appId: "1:417616889091:web:f2c93816e5eaec7ff4d536"
-};
+// Initialize the Firebase app in the service worker
+const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
 
-firebase.initializeApp(firebaseConfig);
+// Handler for when a notification is received while the app is in the background
+onBackgroundMessage(messaging, (payload) => {
+  console.log('[firebase-messaging-sw.js] Received background message ', payload);
 
-// Retrieve an instance of Firebase Messaging so that it can handle background messages.
-const messaging = firebase.messaging();
-
-messaging.onBackgroundMessage(function(payload) {
-  console.log('Received background message ', payload);
-
+  // Customize the notification display
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,

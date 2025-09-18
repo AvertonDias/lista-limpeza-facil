@@ -1,4 +1,3 @@
-import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/components/auth-provider";
 
 export default function PublicListLayout({
@@ -9,7 +8,6 @@ export default function PublicListLayout({
   return (
     <AuthProvider>
         {children}
-        <Toaster />
     </AuthProvider>
   );
 }

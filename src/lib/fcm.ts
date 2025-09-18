@@ -10,7 +10,8 @@ async function initializeFirebaseAdmin() {
   }
   
   try {
-    // As credenciais são gerenciadas pelo ambiente do App Hosting.
+    // No App Hosting, as credenciais são gerenciadas automaticamente pelo ambiente.
+    // Chamar initializeApp() sem argumentos é a maneira correta.
     admin.initializeApp();
     console.log("Firebase Admin SDK inicializado com sucesso.");
   } catch (error) {
@@ -83,8 +84,9 @@ export async function sendNotification(userId: string, title: string, body: stri
     });
 
     if (tokensToRemove.length > 0) {
+      const { FieldValue } = await import('firebase-admin/firestore');
       await userDocRef.update({
-        fcmTokens: admin.firestore.FieldValue.arrayRemove(...tokensToRemove)
+        fcmTokens: FieldValue.arrayRemove(...tokensToRemove)
       });
       console.log(`Removidos ${tokensToRemove.length} tokens inválidos.`);
     }

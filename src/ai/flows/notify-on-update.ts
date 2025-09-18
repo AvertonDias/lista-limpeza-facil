@@ -55,9 +55,8 @@ export const shoppingListUpdateFlow = defineFlow(
       type: 'document',
       config: {
         collection: 'shoppingLists',
-        // Note: documentId should be a wildcard, but the tooling expects a literal string.
-        // The actual trigger in Firebase will use a wildcard like '{listId}'.
-        document: 'userId', 
+        // Use a wildcard to trigger for any document in the collection.
+        document: '{listId}', 
       },
     },
   },

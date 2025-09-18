@@ -45,4 +45,6 @@ const pwaConfig = {
   sw: 'firebase-messaging-sw.js',
 }
 
-export default withPWA(pwaConfig)(nextConfig);
+const withPwaPlugin = withPWA(pwaConfig);
+
+export default process.env.NODE_ENV === 'development' ? nextConfig : withPwaPlugin(nextConfig);

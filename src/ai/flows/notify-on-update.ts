@@ -23,7 +23,17 @@ function ensureAdminInitialized() {
   if (process.env.VERCEL_ENV) {
     console.log('Production environment detected (Vercel). Initializing Firebase Admin SDK...');
     try {
-      admin.initializeApp();
+      const serviceAccountJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
+      if (!serviceAccountJson) {
+        console.error('CRITICAL: GOOGLE_APPLICATION_CREDENTIALS_BASE64 is not set in production!');
+        return;
+      }
+      const serviceAccount = JSON.parse(
+        Buffer.from(serviceAccountJson, 'base64').toString('utf-8')
+      );
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
       console.log('Firebase Admin SDK initialized for production.');
     } catch (e) {
       console.error('CRITICAL: Failed to initialize Firebase Admin SDK in production!', e);

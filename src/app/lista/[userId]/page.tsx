@@ -232,7 +232,6 @@ export default function PublicListPage() {
       title: "Item Adicionado!",
       description: `${newItem.name} foi adicionado à lista.`,
     });
-
     setCustomItemName("");
   };
 

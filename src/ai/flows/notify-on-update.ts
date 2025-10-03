@@ -10,10 +10,15 @@
 import { onFlow } from 'genkit/firebase';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
-import { ensureAdminInitialized, admin } from '@/lib/firebaseAdmin';
+import { admin } from 'firebase-admin';
 
-// Garante que o Admin SDK esteja inicializado antes de qualquer operação.
-ensureAdminInitialized();
+// Helper to ensure Firebase Admin is initialized
+function ensureAdminInitialized() {
+  if (admin.apps.length === 0) {
+    admin.initializeApp();
+    console.log('Firebase Admin SDK initialized.');
+  }
+}
 
 interface ShoppingListItem {
   id: string;
@@ -36,14 +41,8 @@ export const shoppingListUpdateFlow = onFlow(
     },
   },
   async (event) => {
-    // A inicialização é chamada novamente aqui para garantir, mas não vai reinicializar.
     ensureAdminInitialized();
     console.log('Shopping list updated, flow triggered.');
-
-    if (!admin.apps.length) {
-      console.error("onShoppingListUpdate Error: Firebase Admin SDK is not initialized. Exiting flow.");
-      return;
-    }
 
     const db = getFirestore();
     const fcm = getMessaging();

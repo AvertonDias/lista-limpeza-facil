@@ -7,64 +7,13 @@
  */
 
 import { defineFlow } from 'genkit';
-import { onCreate } from 'genkit/firebase';
+import { onFlow } from 'genkit/firebase';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
-import { admin } from '@/lib/firebaseAdmin';
+import { ensureAdminInitialized, admin } from '@/lib/firebaseAdmin';
 
-// Improved Firebase Admin SDK initialization for Vercel/serverless environments
-function ensureAdminInitialized() {
-  if (admin.apps.length > 0) {
-    return;
-  }
-
-  // VERCEL_ENV is set by Vercel in production/preview environments
-  if (process.env.VERCEL_ENV) {
-    console.log('Production environment detected (Vercel). Initializing Firebase Admin SDK...');
-    try {
-      const serviceAccountJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_BASE64;
-      if (!serviceAccountJson) {
-        console.error('CRITICAL: GOOGLE_APPLICATION_CREDENTIALS_BASE64 is not set in production!');
-        return;
-      }
-      const serviceAccount = JSON.parse(
-        Buffer.from(serviceAccountJson, 'base64').toString('utf-8')
-      );
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-      });
-      console.log('Firebase Admin SDK initialized for production.');
-    } catch (e) {
-      console.error('CRITICAL: Failed to initialize Firebase Admin SDK in production!', e);
-    }
-    return;
-  }
-
-  // Local development environment
-  const serviceAccountJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
-  if (serviceAccountJson) {
-    try {
-      const serviceAccount = JSON.parse(
-        Buffer.from(serviceAccountJson, 'base64').toString('utf-8')
-      );
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-      });
-      console.log(
-        'feedback-notification.ts: Firebase Admin SDK initialized for local development.'
-      );
-    } catch (e) {
-      console.error('Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON for local dev', e);
-    }
-  } else {
-     console.warn('Could not initialize admin sdk: GOOGLE_APPLICATION_CREDENTIALS_JSON not found');
-  }
-}
-
+// Garante que o Admin SDK esteja inicializado antes de qualquer operação.
 ensureAdminInitialized();
-
-const db = getFirestore();
-const fcm = getMessaging();
 
 interface Feedback {
   listOwnerId: string;
@@ -73,23 +22,30 @@ interface Feedback {
   name?: string; // Present for 'doubt' type
 }
 
-export const feedbackNotificationFlow = defineFlow(
+export const feedbackNotificationFlow = onFlow(
   {
     name: 'onNewFeedback',
     trigger: {
       connector: 'firebase',
-      type: 'document',
-      config: {
-        collection: 'feedback',
-        document: '{feedbackId}', // Wildcard to trigger for any new document
-        event: 'create', // Explicitly trigger only on creation
-      },
+      event: 'documentCreated',
+      location: 'us-central1',
+      document: 'feedback/{feedbackId}',
     },
   },
   async (event) => {
+    // A inicialização é chamada novamente aqui para garantir, mas não vai reinicializar.
+    ensureAdminInitialized();
     console.log('New feedback document created, flow triggered.');
 
-    const feedbackData = event.data.data() as Feedback | undefined;
+    if (!admin.apps.length) {
+      console.error("onNewFeedback Error: Firebase Admin SDK is not initialized. Exiting flow.");
+      return;
+    }
+    
+    const db = getFirestore();
+    const fcm = getMessaging();
+
+    const feedbackData = event.data?.data() as Feedback | undefined;
 
     if (!feedbackData) {
       console.log('Feedback data is missing. Exiting flow.');

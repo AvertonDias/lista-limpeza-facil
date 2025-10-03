@@ -13,8 +13,25 @@ import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { admin } from '@/lib/firebaseAdmin';
 
-// Initialize Firebase Admin SDK if not already done
-if (!admin.apps.length) {
+// Improved Firebase Admin SDK initialization for Vercel/serverless environments
+function ensureAdminInitialized() {
+  if (admin.apps.length > 0) {
+    return;
+  }
+
+  // VERCEL_ENV is set by Vercel in production/preview environments
+  if (process.env.VERCEL_ENV) {
+    console.log('Production environment detected (Vercel). Initializing Firebase Admin SDK...');
+    try {
+      admin.initializeApp();
+      console.log('Firebase Admin SDK initialized for production.');
+    } catch (e) {
+      console.error('CRITICAL: Failed to initialize Firebase Admin SDK in production!', e);
+    }
+    return;
+  }
+
+  // Local development environment
   const serviceAccountJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
   if (serviceAccountJson) {
     try {
@@ -28,16 +45,15 @@ if (!admin.apps.length) {
         'notify-on-update.ts: Firebase Admin SDK initialized for local development.'
       );
     } catch (e) {
-      console.error('Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON', e);
+      console.error('Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON for local dev', e);
     }
   } else {
-    // This will work in a deployed environment like Cloud Run or App Hosting
-    admin.initializeApp();
-    console.log(
-      'notify-on-update.ts: Firebase Admin SDK initialized for production.'
-    );
+    console.warn('Could not initialize admin sdk: GOOGLE_APPLICATION_CREDENTIALS_JSON not found');
   }
 }
+
+ensureAdminInitialized();
+
 
 const db = getFirestore();
 const fcm = getMessaging();

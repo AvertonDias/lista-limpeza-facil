@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from "react";
@@ -16,28 +15,6 @@ interface AuthContextType {
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// This function will clear old tokens. It's safe to call from the client
-// because Firestore security rules should be configured to only allow a user
-// to edit their own document.
-const clearAllFcmTokens = async (userId: string): Promise<{ success: boolean; error?: string }> => {
-  const userDocRef = doc(db, 'users', userId);
-  try {
-    // Overwrite the fcmTokens field with an empty array.
-    await updateDoc(userDocRef, {
-      fcmTokens: []
-    });
-    console.log(`All FCM tokens for user ${userId} have been cleared.`);
-    return { success: true };
-  } catch (error) {
-    // If the document or field doesn't exist, it might throw an error, which is fine.
-    // We can just log it and continue.
-    console.warn(`Could not clear FCM tokens for user ${userId}:`, (error as Error).message);
-    // Return success as the main goal is to add a new token anyway.
-    return { success: true };
-  }
-};
-
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -78,9 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   
     try {
-      // Clear any old tokens for this user on this device.
-      await clearAllFcmTokens(currentUser.uid);
-  
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
         const currentToken = await getToken(messaging);
@@ -89,7 +63,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           const userDocRef = doc(db, 'users', currentUser.uid);
           // Add the new token to the 'fcmTokens' array.
-          // Using merge: true ensures we don't overwrite the whole doc.
+          // Using merge: true ensures we don't overwrite the whole doc,
+          // and arrayUnion prevents adding duplicate tokens.
           await setDoc(userDocRef, { 
             fcmTokens: arrayUnion(currentToken)
           }, { merge: true });

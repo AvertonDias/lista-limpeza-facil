@@ -1,19 +1,18 @@
 /**
- * @fileOverview Flow to send notifications when a shopping list is updated.
+ * @fileOverview Flow to send notifications when new feedback is submitted.
  *
- * This flow is triggered by an update to a document in the 'shoppingLists'
- * collection in Firestore. It compares the old and new list of items,
- * identifies the newly added item, and sends a push notification to the
- * owner of the list.
+ * This flow is triggered by the creation of a new document in the 'feedback'
+ * collection in Firestore. It sends a push notification to the owner of the list
+ * that the feedback pertains to.
  */
 
 import { defineFlow } from 'genkit';
-import { onUpdate } from 'genkit/firebase';
+import { onCreate } from 'genkit/firebase';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { admin } from '@/lib/firebaseAdmin';
 
-// Initialize Firebase Admin SDK if not already done
+// Ensure Firebase Admin SDK is initialized (idempotent)
 if (!admin.apps.length) {
   const serviceAccountJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
   if (serviceAccountJson) {
@@ -25,16 +24,15 @@ if (!admin.apps.length) {
         credential: admin.credential.cert(serviceAccount),
       });
       console.log(
-        'notify-on-update.ts: Firebase Admin SDK initialized for local development.'
+        'feedback-notification.ts: Firebase Admin SDK initialized for local development.'
       );
     } catch (e) {
       console.error('Failed to parse GOOGLE_APPLICATION_CREDENTIALS_JSON', e);
     }
   } else {
-    // This will work in a deployed environment like Cloud Run or App Hosting
     admin.initializeApp();
     console.log(
-      'notify-on-update.ts: Firebase Admin SDK initialized for production.'
+      'feedback-notification.ts: Firebase Admin SDK initialized for production.'
     );
   }
 }
@@ -42,65 +40,47 @@ if (!admin.apps.length) {
 const db = getFirestore();
 const fcm = getMessaging();
 
-interface ShoppingListItem {
-  id: string;
-  name: string;
+interface Feedback {
+  listOwnerId: string;
+  type: 'suggestion' | 'doubt';
+  text: string;
+  name?: string; // Present for 'doubt' type
 }
 
-interface ShoppingList {
-  userId: string;
-  items: ShoppingListItem[];
-}
-
-export const shoppingListUpdateFlow = defineFlow(
+export const feedbackNotificationFlow = defineFlow(
   {
-    name: 'onShoppingListUpdate',
+    name: 'onNewFeedback',
     trigger: {
       connector: 'firebase',
       type: 'document',
       config: {
-        collection: 'shoppingLists',
-        document: '{listId}', // Wildcard to trigger for any document
+        collection: 'feedback',
+        document: '{feedbackId}', // Wildcard to trigger for any new document
+        event: 'create', // Explicitly trigger only on creation
       },
     },
   },
-  async (change) => {
-    console.log('Shopping list updated, flow triggered.');
+  async (event) => {
+    console.log('New feedback document created, flow triggered.');
 
-    const beforeData = change.before.data() as ShoppingList | undefined;
-    const afterData = change.after.data() as ShoppingList | undefined;
+    const feedbackData = event.data.data() as Feedback | undefined;
 
-    if (!beforeData || !afterData) {
-      console.log('Either before or after data is missing. Exiting flow.');
+    if (!feedbackData) {
+      console.log('Feedback data is missing. Exiting flow.');
       return;
     }
 
-    // If the item count hasn't increased, do nothing.
-    if (afterData.items.length <= beforeData.items.length) {
-      console.log('Item count did not increase. No new item detected. Exiting.');
-      return;
-    }
+    const { listOwnerId, type, text, name } = feedbackData;
+    const userId = listOwnerId;
 
-    // Create a Set of IDs from the 'before' state for efficient lookup
-    const beforeIds = new Set(beforeData.items.map((item) => item.id));
-
-    // Find the first item in the 'after' state that is not in the 'before' state
-    const newItem = afterData.items.find((item) => !beforeIds.has(item.id));
-
-    if (!newItem) {
-      console.log('Could not determine the new item. Exiting.');
-      return;
-    }
-
-    const userId = afterData.userId;
-    console.log(`New item "${newItem.name}" added to list for user ${userId}.`);
+    console.log(`New feedback of type "${type}" for user ${userId}.`);
 
     const userDocRef = db.collection('users').doc(userId);
     const userDoc = await userDocRef.get();
 
     if (!userDoc.exists) {
       console.error(
-        `User document for an ID ${userId} does not exist. Cannot send notification.`
+        `User document for ID ${userId} does not exist. Cannot send notification.`
       );
       return;
     }
@@ -113,10 +93,22 @@ export const shoppingListUpdateFlow = defineFlow(
       return;
     }
 
+    // Construct notification title and body
+    let title = '';
+    const body = text.substring(0, 100) + (text.length > 100 ? '...' : '');
+
+    if (type === 'suggestion') {
+      title = 'Nova Sugestão Recebida!';
+    } else if (type === 'doubt' && name) {
+      title = `Nova Dúvida de ${name}`;
+    } else {
+      title = 'Nova Mensagem Recebida';
+    }
+
     const payload = {
       notification: {
-        title: 'Novo Item na Lista!',
-        body: `O item "${newItem.name}" foi adicionado à sua lista.`,
+        title,
+        body,
         image: '/images/placeholder-icon.png?v=2',
       },
       webpush: {
@@ -127,7 +119,7 @@ export const shoppingListUpdateFlow = defineFlow(
     };
 
     console.log(
-      `Sending notification to ${tokens.length} token(s) for user ${userId}.`
+      `Sending feedback notification to ${tokens.length} token(s) for user ${userId}.`
     );
     const response = await fcm.sendToDevice(tokens, payload);
 

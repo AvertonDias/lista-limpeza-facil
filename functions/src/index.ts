@@ -67,7 +67,7 @@ async function sendNotificationToUser(userId: string, title: string, body: strin
     if (!res.success && res.error) {
       console.error(`Failure sending notification to token at index ${index}:`, res.error);
       if (
-        res.error.code === "messaging/invalid-argument" ||
+        res.error.code === "messaging/invalid-registration-token" ||
         res.error.code === "messaging/registration-token-not-registered"
       ) {
         tokensToRemove.push(tokens[index]);

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from "react";
-import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db, getToken, arrayUnion } from "@/lib/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db, getToken } from "@/lib/firebase";
+import { doc, setDoc, getDoc, arrayUnion } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { VAPID_KEY } from "@/lib/vapidKey";
 
@@ -47,7 +47,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('FCM Token:', currentToken);
           
           const userDocRef = doc(db, 'users', currentUser.uid);
-          // Check if token already exists to avoid unnecessary writes
           const userDoc = await getDoc(userDocRef);
           const existingTokens = userDoc.data()?.fcmTokens || [];
           if (!existingTokens.includes(currentToken)) {

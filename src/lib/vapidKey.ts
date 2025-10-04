@@ -1,3 +1,5 @@
+"use client";
+
 // It's safe to expose this key on the client side.
 // This key is used to ensure that notifications sent to your application
 // are actually from your server.

@@ -2,7 +2,9 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 
-admin.initializeApp();
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 const db = admin.firestore();
 const fcm = admin.messaging();
@@ -34,38 +36,36 @@ async function sendNotificationToUser(userId: string, title: string, body: strin
         return;
     }
 
-    const tokens = userDoc.data()?.fcmTokens;
-    if (!tokens || !Array.isArray(tokens) || tokens.length === 0) {
+    const tokens = userDoc.data()?.fcmTokens as string[] | undefined;
+    if (!Array.isArray(tokens) || tokens.length === 0) {
         console.log(`No FCM tokens for user ${userId}.`);
         return;
     }
 
-    const payload = {
+    const message = {
+        tokens,
         notification: {
             title,
             body,
-            image: "/images/placeholder-icon.png?v=2",
+            // Using absolute URL as required by FCM
+            image: "https://lista-limpeza-facil.vercel.app/images/placeholder-icon.png?v=2",
         },
         webpush: {
-            fcm_options: {
+            fcmOptions: {
                 link: "/",
             },
         },
     };
 
-    const response = await fcm.sendToDevice(tokens, payload);
+    const response = await fcm.sendEachForMulticast(message);
 
     const tokensToRemove: string[] = [];
-    response.results.forEach((result, index) => {
-        const error = result.error;
-        if (error) {
-            console.error(
-                `Failure sending notification to token at index ${index}:`,
-                error
-            );
+    response.responses.forEach((res, index) => {
+        if (!res.success && res.error) {
+            console.error(`Failure sending notification to token at index ${index}:`, res.error);
             if (
-                error.code === "messaging/invalid-registration-token" ||
-                error.code === "messaging/registration-token-not-registered"
+                res.error.code === "messaging/invalid-argument" ||
+                res.error.code === "messaging/registration-token-not-registered"
             ) {
                 tokensToRemove.push(tokens[index]);
             }

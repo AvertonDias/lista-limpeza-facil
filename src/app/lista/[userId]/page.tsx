@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -88,6 +88,7 @@ export default function PublicListPage() {
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
   const userId = params.userId as string;
+  const isInitialShoppingListLoad = useRef(true);
 
   useEffect(() => {
     if (!userId) {
@@ -154,9 +155,25 @@ export default function PublicListPage() {
           shoppingListDocRef,
           (doc) => {
             if (doc.exists()) {
-              const items = doc.data().items || [];
-              items.sort((a: ShoppingListItem, b: ShoppingListItem) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-              setShoppingList(items);
+              const previousList = shoppingList;
+              const newList = doc.data().items || [];
+              newList.sort((a: ShoppingListItem, b: ShoppingListItem) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+              setShoppingList(newList);
+
+              if (isInitialShoppingListLoad.current) {
+                isInitialShoppingListLoad.current = false;
+                return;
+              }
+
+              if (newList.length > previousList.length) {
+                const newItem = newList[0];
+                if (document.hidden) {
+                  new Notification("Novo Item Adicionado!", {
+                    body: `"${newItem.name}" foi adicionado à sua lista de compras.`,
+                    icon: '/images/placeholder-icon.png?v=2',
+                  });
+                }
+              }
             }
           },
           (e) => {

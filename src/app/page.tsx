@@ -92,9 +92,6 @@ export default function DashboardPage() {
   const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Ref to track initial feedback load
-  const isInitialFeedbackLoad = useRef(true);
-
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
@@ -140,30 +137,6 @@ export default function DashboardPage() {
     }
   }, [user]);
   
-  // Effect to show notification for new feedback
-  useEffect(() => {
-    // Don't run on initial load
-    if (isInitialFeedbackLoad.current) {
-        isInitialFeedbackLoad.current = false;
-        return;
-    }
-    // Check if there is new feedback
-    if (feedback.length > 0) {
-        const latestFeedback = feedback[0];
-        // Check if the tab is hidden (user is in another tab)
-        if (document.hidden) {
-            const title = latestFeedback.type === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${latestFeedback.name}`;
-            const body = latestFeedback.text.substring(0, 100) + (latestFeedback.text.length > 100 ? "..." : "");
-
-            new Notification(title, {
-                body,
-                icon: '/images/placeholder-icon.png?v=2',
-            });
-        }
-    }
-}, [feedback]);
-
-
   useEffect(() => {
     if (user) {
       // Listen for materials
@@ -207,17 +180,21 @@ export default function DashboardPage() {
       setFeedbackLoading(true);
       const feedbackQuery = query(collection(db, "feedback"), where("listOwnerId", "==", user.uid));
       const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
-        const feedbackData: Feedback[] = [];
-        snapshot.forEach(doc => {
-            feedbackData.push({ id: doc.id, ...doc.data()} as Feedback);
+        snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+                const newFeedback = { id: change.doc.id, ...change.doc.data() } as Feedback;
+                setFeedback(prev => [newFeedback, ...prev]);
+
+                if (document.hidden) {
+                    const title = newFeedback.type === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${newFeedback.name}`;
+                    const body = newFeedback.text.substring(0, 100) + (newFeedback.text.length > 100 ? "..." : "");
+                    new Notification(title, {
+                        body,
+                        icon: '/images/placeholder-icon.png?v=2',
+                    });
+                }
+            }
         });
-        // Sort feedback by date client-side
-        feedbackData.sort((a, b) => {
-            const dateA = a.createdAt?.toDate() || new Date(0);
-            const dateB = b.createdAt?.toDate() || new Date(0);
-            return dateB.getTime() - dateA.getTime();
-        });
-        setFeedback(feedbackData);
         setFeedbackLoading(false);
       }, (error) => {
         console.error("Error fetching feedback: ", error);
@@ -237,6 +214,41 @@ export default function DashboardPage() {
       }
     }
   }, [user, toast]);
+
+  useEffect(() => {
+    if (!user) return;
+    const isInitialShoppingListLoad = true;
+
+    const shoppingListDocRef = doc(db, "shoppingLists", user.uid);
+    const unsubscribeShoppingList = onSnapshot(shoppingListDocRef,
+        (doc) => {
+          if (doc.exists()) {
+            const previousList = shoppingList;
+            const newList = doc.data().items || [];
+            setShoppingList(newList);
+
+            if (isInitialShoppingListLoad) {
+                return;
+            }
+
+            if (newList.length > previousList.length) {
+              const newItem = newList[0]; 
+              if (document.hidden) {
+                new Notification("Novo Item Adicionado!", {
+                  body: `"${newItem.name}" foi adicionado à sua lista de compras.`,
+                  icon: '/images/placeholder-icon.png?v=2',
+                });
+              }
+            }
+          }
+        },
+        (e) => {
+          console.error("Error listening to shopping list: ", e);
+        }
+    );
+
+    return () => unsubscribeShoppingList();
+  }, [user, shoppingList]);
 
   const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {
     if (!user) return;
@@ -351,6 +363,7 @@ export default function DashboardPage() {
   const handleDeleteFeedback = async (feedbackId: string) => {
     try {
       await deleteDoc(doc(db, "feedback", feedbackId));
+       setFeedback(prevFeedback => prevFeedback.filter(item => item.id !== feedbackId));
       toast({
         title: "Mensagem Removida",
         description: "A mensagem foi removida com sucesso.",

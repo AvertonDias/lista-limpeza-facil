@@ -5,6 +5,7 @@ import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, cr
 import { getToken, onMessage } from "firebase/messaging";
 import { doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { VAPID_KEY } from "@/lib/vapidKey";
 
 interface AuthContextType {
   user: User | null;
@@ -57,12 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const permission = await Notification.requestPermission();
       if (permission === 'granted') {
-        const currentToken = await getToken(messaging);
+        const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
         if (currentToken) {
           console.log('FCM Token:', currentToken);
           
           const userDocRef = doc(db, 'users', currentUser.uid);
-          // Use the modular arrayUnion to add the token
           await setDoc(userDocRef, { 
             fcmTokens: arrayUnion(currentToken)
           }, { merge: true });

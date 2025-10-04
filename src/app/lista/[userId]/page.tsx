@@ -197,7 +197,7 @@ export default function PublicListPage() {
       unsubscribeMaterials?.();
       unsubscribeShoppingList?.();
     };
-  }, [userId, shoppingList]);
+  }, [userId]);
   
 
   const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {

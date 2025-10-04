@@ -294,7 +294,7 @@ export default function DashboardPage() {
     });
 
     return () => unsubscribeShoppingList();
-  }, [user, shoppingList, toast, whatsAppNumber]);
+  }, [user, toast, whatsAppNumber]);
 
   const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {
     if (!user) return;

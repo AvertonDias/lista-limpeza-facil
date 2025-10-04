@@ -20,7 +20,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // Get a messaging instance
-const messaging = (typeof window !== 'undefined') ? getMessaging(app) : null;
+const messaging = (typeof window !== 'undefined' && 'Notification' in window) ? getMessaging(app) : null;
 
 
 export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, getToken, deleteToken, arrayRemove, arrayUnion, onMessage };

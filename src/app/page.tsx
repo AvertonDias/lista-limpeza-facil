@@ -221,11 +221,6 @@ export default function DashboardPage() {
             toast({
               title: notificationTitle,
               description: notificationBody,
-              action: (
-                <ToastAction altText="Notificar" onClick={() => handleWhatsAppNotification(message)}>
-                  Notificar por WhatsApp
-                </ToastAction>
-              ),
               duration: 20000,
             })
           }
@@ -250,7 +245,6 @@ export default function DashboardPage() {
     const shoppingListDocRef = doc(db, "shoppingLists", user.uid);
     const unsubscribeShoppingList = onSnapshot(shoppingListDocRef, (doc) => {
         if (doc.exists()) {
-            const previousList = shoppingList;
             const newList = doc.data().items || [];
             
             if (isInitialShoppingListLoad.current) {
@@ -259,6 +253,7 @@ export default function DashboardPage() {
                 return;
             }
 
+            const previousList = shoppingList;
             setShoppingList(newList);
 
             if (newList.length > previousList.length) {
@@ -279,11 +274,6 @@ export default function DashboardPage() {
                 toast({
                     title: notificationTitle,
                     description: notificationBody,
-                    action: (
-                      <ToastAction altText="Notificar" onClick={() => handleWhatsAppNotification(message)}>
-                        Notificar por WhatsApp
-                      </ToastAction>
-                    ),
                     duration: 20000,
                 });
               }

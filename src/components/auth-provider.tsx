@@ -1,9 +1,9 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from "react";
-import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db, arrayUnion } from "@/lib/firebase";
+import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db } from "@/lib/firebase";
 import { getToken, onMessage } from "firebase/messaging";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, arrayUnion } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { VAPID_KEY } from "@/lib/vapidKey";
 

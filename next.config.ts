@@ -53,4 +53,4 @@ const pwaConfig = {
 
 const withPwaPlugin = withPWA(pwaConfig);
 
-export default process.env.NODE_ENV === 'development' ? nextConfig : withPwaPlugin(nextConfig);
+export default withPwaPlugin(nextConfig);

@@ -2,16 +2,15 @@
 importScripts("https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js");
 
-const firebaseConfig = {
+// Use as mesmas credenciais do seu app
+firebase.initializeApp({
   apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
   authDomain: "studio-1326322560-ad791.firebaseapp.com",
   projectId: "studio-1326322560-ad791",
   storageBucket: "studio-1326322560-ad791.firebasestorage.app",
   messagingSenderId: "417616889091",
-  appId: "1:417616889091:web:f2c93816e5eaec7ff4d536"
-};
-
-firebase.initializeApp(firebaseConfig);
+  appId: "1:417616889091:web:f2c93816e5eaec7ff4d536",
+});
 
 const messaging = firebase.messaging();
 

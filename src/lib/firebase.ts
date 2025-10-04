@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, createUserWithEmailAndPassword, UserCredential } from "firebase/auth";
 import { getFirestore, arrayUnion, arrayRemove } from "firebase/firestore";
-import { getMessaging, getToken, deleteToken } from "firebase/messaging";
+import { getMessaging, getToken, deleteToken, onMessage } from "firebase/messaging";
 
 export const firebaseConfig: FirebaseOptions = {
   apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
@@ -21,5 +21,5 @@ const db = getFirestore(app);
 const messaging = (typeof window !== 'undefined') ? getMessaging(app) : null;
 
 
-export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, getToken, deleteToken, arrayRemove, arrayUnion };
+export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, getToken, deleteToken, arrayRemove, arrayUnion, onMessage };
 export type { User, UserCredential };

@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useEffect, ReactNode } from "react";
 import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db, getToken, arrayUnion } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { VAPID_KEY } from "@/lib/vapidKey";
 
@@ -47,12 +47,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('FCM Token:', currentToken);
           
           const userDocRef = doc(db, 'users', currentUser.uid);
-          await setDoc(userDocRef, { 
-            fcmTokens: arrayUnion(currentToken)
-          }, { merge: true });
-
-          console.log('FCM token saved/updated successfully.');
-  
+          // Check if token already exists to avoid unnecessary writes
+          const userDoc = await getDoc(userDocRef);
+          const existingTokens = userDoc.data()?.fcmTokens || [];
+          if (!existingTokens.includes(currentToken)) {
+             await setDoc(userDocRef, { 
+              fcmTokens: arrayUnion(currentToken)
+            }, { merge: true });
+            console.log('FCM token saved/updated successfully.');
+          } else {
+            console.log('FCM token already exists for this user.');
+          }
         } else {
           console.log('No registration token available. Request permission to generate one.');
         }

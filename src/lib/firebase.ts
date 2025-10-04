@@ -3,6 +3,7 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User,
 import { getFirestore, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getMessaging, getToken, deleteToken, onMessage } from "firebase/messaging";
 
+// Your web app's Firebase configuration - CORRECTED
 export const firebaseConfig: FirebaseOptions = {
   apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
   authDomain: "studio-1326322560-ad791.firebaseapp.com",
@@ -11,6 +12,7 @@ export const firebaseConfig: FirebaseOptions = {
   messagingSenderId: "417616889091",
   appId: "1:417616889091:web:f2c93816e5eaec7ff4d536"
 };
+
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();

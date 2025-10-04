@@ -2,7 +2,7 @@
 
 import React, { createContext, useState, useEffect, ReactNode } from "react";
 import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db, getToken } from "@/lib/firebase";
-import { doc, setDoc, getDoc, arrayUnion } from "firebase/firestore";
+import { doc, setDoc, getDoc, arrayUnion, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { VAPID_KEY } from "@/lib/vapidKey";
 
@@ -34,8 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const requestPermissionAndSaveToken = async (currentUser: User) => {
-    if (!messaging || typeof Notification === 'undefined') {
-      console.log('Firebase Messaging is not available in this environment.');
+    if (!messaging || typeof Notification === 'undefined' || !VAPID_KEY) {
+      console.log('Firebase Messaging is not available in this environment or VAPID key is missing.');
       return;
     }
   
@@ -52,10 +52,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if(userDoc.exists()) {
             const existingTokens = userDoc.data()?.fcmTokens || [];
             if (!existingTokens.includes(currentToken)) {
-               await setDoc(userDocRef, { 
+               await updateDoc(userDocRef, { 
                 fcmTokens: arrayUnion(currentToken)
-              }, { merge: true });
-              console.log('FCM token saved/updated successfully.');
+              });
+              console.log('FCM token saved successfully.');
             } else {
               console.log('FCM token already exists for this user.');
             }

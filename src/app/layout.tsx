@@ -1,11 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { AuthProvider } from "@/components/auth-provider";
 import { Toaster } from "@/components/ui/toaster";
-import { useEffect } from 'react';
-import { onMessage } from 'firebase/messaging';
-import { messaging } from '@/lib/firebase';
-import { useToast } from "@/hooks/use-toast";
 import "./globals.css";
+import { ForegroundNotificationHandler } from "@/components/foreground-notification-handler";
 
 export const metadata: Metadata = {
   title: "Lista de Limpeza Fácil",
@@ -18,25 +15,6 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#457B9D",
-}
-
-function ForegroundNotificationHandler() {
-  const { toast } = useToast();
-
-  useEffect(() => {
-    if (messaging) {
-      const unsubscribe = onMessage(messaging, (payload) => {
-        console.log("[FCM Foreground] Mensagem recebida:", payload);
-        toast({
-          title: payload.notification?.title,
-          description: payload.notification?.body,
-        });
-      });
-      return () => unsubscribe();
-    }
-  }, [toast]);
-  
-  return null;
 }
 
 export default function RootLayout({

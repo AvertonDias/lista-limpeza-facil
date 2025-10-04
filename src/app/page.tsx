@@ -104,9 +104,10 @@ export default function DashboardPage() {
 
   // Request permission and save FCM token
   useEffect(() => {
-    if (user && messaging) {
-      const requestPermissionAndSaveToken = async (currentUser: typeof user) => {
-          try {
+    if (!user) return;
+    const requestPermissionAndSaveToken = async (currentUser: typeof user) => {
+        try {
+          if ('Notification' in window && messaging) {
             const permission = await Notification.requestPermission();
             if (permission === 'granted') {
               const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
@@ -117,7 +118,8 @@ export default function DashboardPage() {
                 const userDoc = await getDoc(userDocRef);
                 
                 if(userDoc.exists()) {
-                  const existingTokens = userDoc.data()?.fcmTokens || [];
+                  const userData = userDoc.data();
+                  const existingTokens = userData.fcmTokens || [];
                   if (!existingTokens.includes(currentToken)) {
                      await updateDoc(userDocRef, { 
                       fcmTokens: arrayUnion(currentToken)
@@ -126,6 +128,9 @@ export default function DashboardPage() {
                   } else {
                     console.log('FCM token already exists for this user.');
                   }
+                  
+                  // Set user data to state
+                  if (userData.whatsapp) setWhatsAppNumber(userData.whatsapp);
                 }
               } else {
                 console.log('No registration token available. Request permission to generate one.');
@@ -133,12 +138,12 @@ export default function DashboardPage() {
             } else {
               console.log('Unable to get permission to notify.');
             }
-          } catch (error) {
-            console.error('An error occurred while retrieving token. ', error);
           }
-      };
-      requestPermissionAndSaveToken(user);
-    }
+        } catch (error) {
+          console.error('An error occurred while retrieving token. ', error);
+        }
+    };
+    requestPermissionAndSaveToken(user);
   }, [user]);
   
   useEffect(() => {
@@ -393,7 +398,7 @@ export default function DashboardPage() {
         toast({
             variant: "destructive",
             title: "Número de WhatsApp não definido",
-            description: "Por favor, insira um número de telefone para enviar a notificação.",
+            description: "Por favor, defina um número de WhatsApp no seu perfil para enviar a notificação.",
         });
         return;
     }
@@ -595,16 +600,6 @@ export default function DashboardPage() {
                     <h2 className="font-headline text-3xl font-bold tracking-tight">
                     Sugestões e Dúvidas
                     </h2>
-                    <div className="relative w-full sm:w-64">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <Input 
-                            type="tel"
-                            placeholder="Nº WhatsApp (Ex: 55119...)"
-                            value={whatsAppNumber}
-                            onChange={(e) => setWhatsAppNumber(e.target.value)}
-                            className="w-full pl-10"
-                        />
-                    </div>
                 </div>
                 {feedbackLoading ? (
                    <div className="flex justify-center items-center h-64">
@@ -646,7 +641,8 @@ export default function DashboardPage() {
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <p className="text-sm text-foreground">{item.text}</p>
-                                    <Button onClick={() => handleWhatsAppNotification(item)} size="sm" variant="outline">
+                                    <Button onClick={() => handleWhatsAppNotification(item)} size="sm">
+                                        <Phone className="mr-2 h-4 w-4"/>
                                         Notificar por WhatsApp
                                     </Button>
                                  </CardContent>

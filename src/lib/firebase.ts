@@ -3,7 +3,7 @@ import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User,
 import { getFirestore, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getMessaging, getToken, deleteToken, onMessage } from "firebase/messaging";
 
-// Your web app's Firebase configuration - CORRECTED
+// Your web app's Firebase configuration
 export const firebaseConfig: FirebaseOptions = {
   apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
   authDomain: "studio-1326322560-ad791.firebaseapp.com",

@@ -9,7 +9,7 @@ export function ForegroundNotificationHandler() {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (messaging) {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator && messaging) {
       const unsubscribe = onMessage(messaging, (payload) => {
         console.log("[FCM Foreground] Mensagem recebida:", payload);
         toast({

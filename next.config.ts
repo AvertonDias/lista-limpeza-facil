@@ -42,7 +42,7 @@ const pwaConfig = {
   disable: process.env.NODE_ENV === 'development',
   register: true,
   skipWaiting: true,
-  // sw: 'firebase-messaging-sw.js' // This is not needed, next-pwa handles the service worker registration
+  sw: 'firebase-messaging-sw.js',
 }
 
 const withPwaPlugin = withPWA(pwaConfig);

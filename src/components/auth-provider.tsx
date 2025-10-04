@@ -63,13 +63,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } else {
         console.log('Unable to get permission to notify.');
+        toast({
+          variant: "destructive",
+          title: "Permissão de Notificação Negada",
+          description: "Você não receberá notificações de novos itens.",
+        });
       }
     } catch (error) {
       console.error('An error occurred while retrieving token. ', error);
        toast({
         variant: "destructive",
-        title: "Erro ao obter token",
-        description: "Não foi possível obter o token de notificação.",
+        title: "Erro ao obter token de notificação",
+        description: "Não foi possível registrar para notificações. Tente recarregar a página.",
       });
     }
   };

@@ -1,34 +1,28 @@
-// Scripts for firebase and firebase messaging
+/* eslint-disable no-undef */
 importScripts("https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js");
 
-// Initialize the Firebase app in the service worker
-// by passing in the messagingSenderId.
 const firebaseConfig = {
   apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
   authDomain: "studio-1326322560-ad791.firebaseapp.com",
   projectId: "studio-1326322560-ad791",
   storageBucket: "studio-1326322560-ad791.appspot.com",
   messagingSenderId: "417616889091",
-  appId: "1:417616889091:web:f2c93816e5eaec7ff4d536"
+  appId: "1:417616889091:web:f2c93816e5eaec7ff4d536",
 };
 
 firebase.initializeApp(firebaseConfig);
 
-
-// Retrieve an instance of Firebase Messaging so that it can handle background
-// messages.
 const messaging = firebase.messaging();
 
-messaging.onBackgroundMessage(function(payload) {
-  console.log("[firebase-messaging-sw.js] Received background message ", payload);
-
+messaging.onBackgroundMessage(function (payload) {
+  console.log("Mensagem recebida em background: ", payload);
+  
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: '/images/placeholder-icon.png?v=2'
+    icon: "/images/placeholder-icon.png?v=2",
   };
 
-  self.registration.showNotification(notificationTitle,
-    notificationOptions);
+  self.registration.showNotification(notificationTitle, notificationOptions);
 });

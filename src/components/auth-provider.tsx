@@ -1,8 +1,7 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from "react";
-import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db } from "@/lib/firebase";
-import { getToken, onMessage } from "firebase/messaging";
+import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db, getToken } from "@/lib/firebase";
 import { doc, setDoc, arrayUnion } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import { VAPID_KEY } from "@/lib/vapidKey";
@@ -34,24 +33,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      if (messaging) {
-        const unsubscribeOnMessage = onMessage(messaging, (payload) => {
-          console.log("Foreground message received.", payload);
-          toast({
-            title: payload.notification?.title,
-            description: payload.notification?.body,
-          });
-        });
-        return () => unsubscribeOnMessage();
-      }
-    }
-  }, [toast]);
-
   const requestPermissionAndSaveToken = async (currentUser: User) => {
     if (!messaging) {
-      console.log('Firebase Messaging is not available.');
+      console.log('Firebase Messaging is not available in this environment.');
       return;
     }
   
@@ -77,6 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     } catch (error) {
       console.error('An error occurred while retrieving token. ', error);
+       toast({
+        variant: "destructive",
+        title: "Erro ao obter token",
+        description: "Não foi possível obter o token de notificação.",
+      });
     }
   };
   

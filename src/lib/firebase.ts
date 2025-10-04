@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, createUserWithEmailAndPassword, UserCredential } from "firebase/auth";
-import { getFirestore, arrayRemove, arrayUnion } from "firebase/firestore";
+import { getFirestore, arrayUnion, arrayRemove } from "firebase/firestore";
 import { getMessaging, getToken, deleteToken } from "firebase/messaging";
 
 export const firebaseConfig: FirebaseOptions = {

@@ -1,9 +1,9 @@
 "use client";
 
 import React, { createContext, useState, useEffect, ReactNode } from "react";
-import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db } from "@/lib/firebase";
+import { auth, onAuthStateChanged, User, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword, UserCredential, messaging, db, arrayUnion } from "@/lib/firebase";
 import { getToken, onMessage } from "firebase/messaging";
-import { doc, setDoc, arrayUnion, updateDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
@@ -62,12 +62,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('FCM Token:', currentToken);
           
           const userDocRef = doc(db, 'users', currentUser.uid);
-          // Add the new token to the 'fcmTokens' array.
-          // Using merge: true ensures we don't overwrite the whole doc,
-          // and arrayUnion prevents adding duplicate tokens.
+          // Use the modular arrayUnion to add the token
           await setDoc(userDocRef, { 
             fcmTokens: arrayUnion(currentToken)
           }, { merge: true });
+
           console.log('FCM token saved/updated successfully.');
   
         } else {

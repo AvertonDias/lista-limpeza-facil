@@ -47,7 +47,8 @@ export default function Header() {
       const userDocRef = doc(db, "users", user.uid);
       getDoc(userDocRef).then((docSnap) => {
         if (docSnap.exists()) {
-          setWhatsappNumber(docSnap.data()?.whatsapp || "");
+          const rawNumber = docSnap.data()?.whatsapp || "";
+          setWhatsappNumber(formatWhatsApp(rawNumber));
         }
       });
     }
@@ -62,10 +63,12 @@ export default function Header() {
     if (!user) return;
     setIsSaving(true);
     try {
+      // Save only the digits to Firestore
+      const digitsOnly = whatsappNumber.replace(/\D/g, "");
       const userDocRef = doc(db, "users", user.uid);
       await updateDoc(userDocRef, {
         displayName: displayName,
-        whatsapp: whatsappNumber,
+        whatsapp: digitsOnly,
       });
 
       if (user.displayName !== displayName) {
@@ -89,11 +92,21 @@ export default function Header() {
     }
   };
 
-  const handleWhatsAppInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    // Remove all non-digit characters
+  const formatWhatsApp = (value: string) => {
+    if (!value) return "";
     const digitsOnly = value.replace(/\D/g, "");
-    setWhatsappNumber(digitsOnly);
+    
+    if (digitsOnly.length <= 2) {
+      return `(${digitsOnly}`;
+    }
+    if (digitsOnly.length <= 7) {
+      return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2)}`;
+    }
+    return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 7)}-${digitsOnly.slice(7, 11)}`;
+  }
+
+  const handleWhatsAppInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setWhatsappNumber(formatWhatsApp(e.target.value));
   };
 
   const getInitials = (name: string) => {
@@ -173,8 +186,9 @@ export default function Header() {
                 id="whatsapp"
                 value={whatsappNumber}
                 onChange={handleWhatsAppInputChange}
-                placeholder="5511999998888"
+                placeholder="(XX) XXXXX-XXXX"
                 className="col-span-3"
+                maxLength={15}
               />
             </div>
           </div>

@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import { db } from "@/lib/firebase";
+import { db, messaging, getToken } from "@/lib/firebase";
+import { VAPID_KEY } from "@/lib/vapidKey";
 import {
   collection,
   query,
@@ -15,6 +16,8 @@ import {
   onSnapshot,
   setDoc,
   Timestamp,
+  getDoc,
+  arrayUnion,
 } from "firebase/firestore";
 import type { Material, ShoppingListItem, Feedback } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -97,6 +100,45 @@ export default function DashboardPage() {
       router.push("/login");
     }
   }, [user, loading, router]);
+
+  // Request permission and save FCM token
+  useEffect(() => {
+    if (user && messaging) {
+      const requestPermissionAndSaveToken = async (currentUser: typeof user) => {
+          try {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+              const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
+              if (currentToken) {
+                console.log('FCM Token:', currentToken);
+                
+                const userDocRef = doc(db, 'users', currentUser.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                if(userDoc.exists()) {
+                  const existingTokens = userDoc.data()?.fcmTokens || [];
+                  if (!existingTokens.includes(currentToken)) {
+                     await updateDoc(userDocRef, { 
+                      fcmTokens: arrayUnion(currentToken)
+                    });
+                    console.log('FCM token saved successfully.');
+                  } else {
+                    console.log('FCM token already exists for this user.');
+                  }
+                }
+              } else {
+                console.log('No registration token available. Request permission to generate one.');
+              }
+            } else {
+              console.log('Unable to get permission to notify.');
+            }
+          } catch (error) {
+            console.error('An error occurred while retrieving token. ', error);
+          }
+      };
+      requestPermissionAndSaveToken(user);
+    }
+  }, [user]);
   
   // Effect to show notification for new feedback
   useEffect(() => {

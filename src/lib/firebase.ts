@@ -1,3 +1,5 @@
+"use client";
+
 import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, createUserWithEmailAndPassword, UserCredential } from "firebase/auth";
 import { getFirestore, arrayUnion, arrayRemove } from "firebase/firestore";

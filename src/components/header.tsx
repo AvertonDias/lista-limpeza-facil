@@ -89,6 +89,13 @@ export default function Header() {
     }
   };
 
+  const handleWhatsAppInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Remove all non-digit characters
+    const digitsOnly = value.replace(/\D/g, "");
+    setWhatsappNumber(digitsOnly);
+  };
+
   const getInitials = (name: string) => {
     if (!name) return "";
     const names = name.split(' ');
@@ -165,7 +172,7 @@ export default function Header() {
               <Input
                 id="whatsapp"
                 value={whatsappNumber}
-                onChange={(e) => setWhatsappNumber(e.target.value)}
+                onChange={handleWhatsAppInputChange}
                 placeholder="5511999998888"
                 className="col-span-3"
               />

@@ -200,6 +200,7 @@ export default function DashboardPage() {
 
         if (isInitialFeedbackLoad.current) {
           isInitialFeedbackLoad.current = false;
+          setFeedbackLoading(false);
           return;
         }
 
@@ -217,12 +218,6 @@ export default function DashboardPage() {
                   icon: '/images/placeholder-icon.png?v=2',
               });
             }
-
-            toast({
-              title: notificationTitle,
-              description: notificationBody,
-              duration: 20000,
-            })
           }
         });
         setFeedbackLoading(false);
@@ -237,7 +232,7 @@ export default function DashboardPage() {
         unsubscribeFeedback();
       }
     }
-  }, [user, toast]);
+  }, [user]);
 
  useEffect(() => {
     if (!user) return;
@@ -265,12 +260,6 @@ export default function DashboardPage() {
                       icon: '/images/placeholder-icon.png?v=2',
                     });
                   }
-                  
-                  toast({
-                      title: notificationTitle,
-                      description: notificationBody,
-                      duration: 20000,
-                  });
                 }
               }
             }
@@ -281,7 +270,7 @@ export default function DashboardPage() {
     });
 
     return () => unsubscribeShoppingList();
-  }, [user, toast, whatsAppNumber]);
+  }, [user, whatsAppNumber]);
 
   const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {
     if (!user) return;

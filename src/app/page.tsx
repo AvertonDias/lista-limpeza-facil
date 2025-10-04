@@ -71,6 +71,7 @@ import {
   MessageSquare,
   Lightbulb,
   ShoppingCart,
+  Phone,
 } from "lucide-react";
 import Header from "@/components/header";
 import { format } from "date-fns";
@@ -91,6 +92,9 @@ export default function DashboardPage() {
   const [materialsLoading, setMaterialsLoading] = useState(true);
   const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [whatsAppNumber, setWhatsAppNumber] = useState("");
+
+  const isInitialShoppingListLoad = useRef(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -180,21 +184,27 @@ export default function DashboardPage() {
       setFeedbackLoading(true);
       const feedbackQuery = query(collection(db, "feedback"), where("listOwnerId", "==", user.uid));
       const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
+        const newFeedbacks: Feedback[] = [];
         snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
                 const newFeedback = { id: change.doc.id, ...change.doc.data() } as Feedback;
-                setFeedback(prev => [newFeedback, ...prev]);
-
-                if (document.hidden) {
-                    const title = newFeedback.type === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${newFeedback.name}`;
-                    const body = newFeedback.text.substring(0, 100) + (newFeedback.text.length > 100 ? "..." : "");
-                    new Notification(title, {
-                        body,
-                        icon: '/images/placeholder-icon.png?v=2',
-                    });
-                }
+                newFeedbacks.push(newFeedback);
             }
         });
+
+        if (newFeedbacks.length > 0) {
+            setFeedback(prev => [...newFeedbacks, ...prev]);
+
+            if (document.hidden) {
+                const latestFeedback = newFeedbacks[0];
+                const title = latestFeedback.type === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${latestFeedback.name}`;
+                const body = latestFeedback.text.substring(0, 100) + (latestFeedback.text.length > 100 ? "..." : "");
+                new Notification(title, {
+                    body,
+                    icon: '/images/placeholder-icon.png?v=2',
+                });
+            }
+        }
         setFeedbackLoading(false);
       }, (error) => {
         console.error("Error fetching feedback: ", error);
@@ -217,35 +227,35 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user) return;
-    const isInitialShoppingListLoad = true;
-
+    
     const shoppingListDocRef = doc(db, "shoppingLists", user.uid);
-    const unsubscribeShoppingList = onSnapshot(shoppingListDocRef,
-        (doc) => {
-          if (doc.exists()) {
+    const unsubscribeShoppingList = onSnapshot(shoppingListDocRef, (doc) => {
+        if (doc.exists()) {
             const previousList = shoppingList;
             const newList = doc.data().items || [];
-            setShoppingList(newList);
-
-            if (isInitialShoppingListLoad) {
+            
+            if (isInitialShoppingListLoad.current) {
+                setShoppingList(newList);
+                isInitialShoppingListLoad.current = false;
                 return;
             }
 
+            setShoppingList(newList);
+
             if (newList.length > previousList.length) {
-              const newItem = newList[0]; 
-              if (document.hidden) {
+              const addedItems = newList.filter((newItem: any) => !previousList.some(oldItem => oldItem.id === newItem.id));
+              if (addedItems.length > 0 && document.hidden) {
+                const newItem = addedItems[addedItems.length - 1];
                 new Notification("Novo Item Adicionado!", {
                   body: `"${newItem.name}" foi adicionado à sua lista de compras.`,
                   icon: '/images/placeholder-icon.png?v=2',
                 });
               }
             }
-          }
-        },
-        (e) => {
-          console.error("Error listening to shopping list: ", e);
         }
-    );
+    }, (e) => {
+        console.error("Error listening to shopping list: ", e);
+    });
 
     return () => unsubscribeShoppingList();
   }, [user, shoppingList]);
@@ -378,6 +388,21 @@ export default function DashboardPage() {
     }
   };
 
+  const handleWhatsAppNotification = (item: Feedback) => {
+    if (!whatsAppNumber.trim()) {
+        toast({
+            variant: "destructive",
+            title: "Número de WhatsApp não definido",
+            description: "Por favor, insira um número de telefone para enviar a notificação.",
+        });
+        return;
+    }
+    const messageType = item.type === 'suggestion' ? 'Nova Sugestão' : `Dúvida de ${item.name}`;
+    const message = `*${messageType}:*\n\n${item.text}`;
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/${whatsAppNumber}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+  };
 
   const filteredMaterials = useMemo(() => {
     return materials.filter((material) =>
@@ -443,7 +468,6 @@ export default function DashboardPage() {
     )}
     </>
   );
-
   return (
     <div className="flex min-h-screen w-full flex-col">
       <Header />
@@ -567,9 +591,21 @@ export default function DashboardPage() {
             </div>
 
             <div>
-                <h2 className="font-headline text-3xl font-bold tracking-tight mb-6">
-                  Sugestões e Dúvidas
-                </h2>
+                <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
+                    <h2 className="font-headline text-3xl font-bold tracking-tight">
+                    Sugestões e Dúvidas
+                    </h2>
+                    <div className="relative w-full sm:w-64">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input 
+                            type="tel"
+                            placeholder="Nº WhatsApp (Ex: 55119...)"
+                            value={whatsAppNumber}
+                            onChange={(e) => setWhatsAppNumber(e.target.value)}
+                            className="w-full pl-10"
+                        />
+                    </div>
+                </div>
                 {feedbackLoading ? (
                    <div className="flex justify-center items-center h-64">
                       <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -608,8 +644,11 @@ export default function DashboardPage() {
                                         </AlertDialogContent>
                                     </AlertDialog>
                                 </CardHeader>
-                                <CardContent>
+                                <CardContent className="space-y-4">
                                     <p className="text-sm text-foreground">{item.text}</p>
+                                    <Button onClick={() => handleWhatsAppNotification(item)} size="sm" variant="outline">
+                                        Notificar por WhatsApp
+                                    </Button>
                                  </CardContent>
                             </Card>
                         ))}
@@ -665,6 +704,5 @@ export default function DashboardPage() {
                 </SheetContent>
             </Sheet>
         </div>
-    </div>
-  );
+    </div>);
 }

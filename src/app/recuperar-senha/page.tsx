@@ -15,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, CheckCircle } from "lucide-react";
 import { Logo } from "@/components/icons/logo";
 import Link from "next/link";
 import { auth, sendPasswordResetEmail } from "@/lib/firebase";
@@ -34,6 +34,7 @@ export default function RecuperarSenhaPage() {
       toast({
         title: "E-mail enviado!",
         description: "Verifique sua caixa de entrada (e de spam) para redefinir sua senha.",
+        className: "border-green-500 bg-green-50 dark:bg-green-900/20",
       });
       router.push("/login");
     } catch (error: any) {
@@ -84,9 +85,10 @@ export default function RecuperarSenhaPage() {
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Enviar e-mail de redefinição
             </Button>
-             <p className="text-xs text-center text-muted-foreground pt-2">
-              Caso não receba o e-mail, verifique sua caixa de spam.
-            </p>
+            <div className="flex items-center text-xs text-center text-green-700 dark:text-green-400 pt-2">
+                <CheckCircle className="mr-1 h-4 w-4" />
+                <p>Caso não receba o e-mail, verifique sua caixa de spam.</p>
+            </div>
             <Link href="/login" className="text-sm font-medium text-primary hover:underline pt-2">
                 Voltar para o login
             </Link>

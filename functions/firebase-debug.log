@@ -107,3 +107,5 @@
 
 Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
  
+[debug] [2025-10-04T01:27:32.330Z] Functions emulator received unknown request at path /
+[debug] [2025-10-04T01:27:32.970Z] Eventarc emulator received unknown request at path / {"metadata":{"emulator":{"name":"eventarc"},"message":"Eventarc emulator received unknown request at path /"}}

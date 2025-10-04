@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
@@ -15,10 +14,7 @@ import {
   doc,
   onSnapshot,
   setDoc,
-  getDoc,
   Timestamp,
-  getDocs,
-  serverTimestamp,
 } from "firebase/firestore";
 import type { Material, ShoppingListItem, Feedback } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -93,12 +89,39 @@ export default function DashboardPage() {
   const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Ref to track initial feedback load
+  const isInitialFeedbackLoad = useRef(true);
+
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
     }
   }, [user, loading, router]);
   
+  // Effect to show notification for new feedback
+  useEffect(() => {
+    // Don't run on initial load
+    if (isInitialFeedbackLoad.current) {
+        isInitialFeedbackLoad.current = false;
+        return;
+    }
+    // Check if there is new feedback
+    if (feedback.length > 0) {
+        const latestFeedback = feedback[0];
+        // Check if the tab is hidden (user is in another tab)
+        if (document.hidden) {
+            const title = latestFeedback.type === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${latestFeedback.name}`;
+            const body = latestFeedback.text.substring(0, 100) + (latestFeedback.text.length > 100 ? "..." : "");
+
+            new Notification(title, {
+                body,
+                icon: '/images/placeholder-icon.png?v=2',
+            });
+        }
+    }
+}, [feedback]);
+
+
   useEffect(() => {
     if (user) {
       // Listen for materials
@@ -590,5 +613,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

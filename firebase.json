@@ -1,8 +1,5 @@
 
 {
-  "functions": {
-    "source": "functions"
-  },
   "hosting": {
     "public": "public",
     "ignore": [

@@ -1,7 +1,7 @@
 import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, createUserWithEmailAndPassword, UserCredential } from "firebase/auth";
 import { getFirestore, arrayUnion, arrayRemove } from "firebase/firestore";
-import { getMessaging, getToken, deleteToken, onMessage } from "firebase/messaging";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 // Your web app's Firebase configuration
 export const firebaseConfig: FirebaseOptions = {
@@ -19,9 +19,11 @@ const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Get a messaging instance
-const messaging = (typeof window !== 'undefined' && 'Notification' in window) ? getMessaging(app) : null;
+// Get a messaging instance, only on the client
+const messaging = (typeof window !== 'undefined' && typeof Notification !== 'undefined')
+  ? getMessaging(app)
+  : null;
 
 
-export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, getToken, deleteToken, arrayRemove, arrayUnion, onMessage };
+export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, getToken, arrayRemove, arrayUnion, onMessage };
 export type { User, UserCredential };

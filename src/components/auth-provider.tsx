@@ -34,7 +34,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const requestPermissionAndSaveToken = async (currentUser: User) => {
-    if (!messaging) {
+    if (!messaging || typeof Notification === 'undefined') {
       console.log('Firebase Messaging is not available in this environment.');
       return;
     }
@@ -48,14 +48,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           
           const userDocRef = doc(db, 'users', currentUser.uid);
           const userDoc = await getDoc(userDocRef);
-          const existingTokens = userDoc.data()?.fcmTokens || [];
-          if (!existingTokens.includes(currentToken)) {
-             await setDoc(userDocRef, { 
-              fcmTokens: arrayUnion(currentToken)
-            }, { merge: true });
-            console.log('FCM token saved/updated successfully.');
-          } else {
-            console.log('FCM token already exists for this user.');
+          
+          if(userDoc.exists()) {
+            const existingTokens = userDoc.data()?.fcmTokens || [];
+            if (!existingTokens.includes(currentToken)) {
+               await setDoc(userDocRef, { 
+                fcmTokens: arrayUnion(currentToken)
+              }, { merge: true });
+              console.log('FCM token saved/updated successfully.');
+            } else {
+              console.log('FCM token already exists for this user.');
+            }
           }
         } else {
           console.log('No registration token available. Request permission to generate one.');

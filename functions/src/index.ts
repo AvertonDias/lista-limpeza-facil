@@ -54,14 +54,8 @@ async function sendNotificationToUser(userId: string, title: string, body: strin
     },
   };
 
-  let response;
-  try {
-    response = await fcm.sendEachForMulticast(message);
-  } catch (err) {
-    console.error("Erro geral ao enviar notificação:", err);
-    return;
-  }
-
+  const response = await fcm.sendEachForMulticast(message);
+  
   const tokensToRemove: string[] = [];
   response.responses.forEach((res, index) => {
     if (!res.success && res.error) {

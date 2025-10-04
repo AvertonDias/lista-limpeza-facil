@@ -159,7 +159,7 @@ export default function DashboardPage() {
         return;
     }
     const encodedMessage = encodeURIComponent(text);
-    const whatsappUrl = `https://wa.me/${cleanWhatsAppNumber}?text=${encodedMessage}`;
+    const whatsappUrl = `https://wa.me/55${cleanWhatsAppNumber}?text=${encodedMessage}`;
     window.open(whatsappUrl, '_blank');
   };
   

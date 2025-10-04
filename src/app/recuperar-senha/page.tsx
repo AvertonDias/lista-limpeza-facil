@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -32,7 +33,7 @@ export default function RecuperarSenhaPage() {
       await sendPasswordResetEmail(auth, email);
       toast({
         title: "E-mail enviado!",
-        description: "Verifique sua caixa de entrada para redefinir sua senha.",
+        description: "Verifique sua caixa de entrada (e de spam) para redefinir sua senha.",
       });
       router.push("/login");
     } catch (error: any) {
@@ -83,7 +84,10 @@ export default function RecuperarSenhaPage() {
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Enviar e-mail de redefinição
             </Button>
-            <Link href="/login" className="text-sm font-medium text-primary hover:underline">
+             <p className="text-xs text-center text-muted-foreground pt-2">
+              Caso não receba o e-mail, verifique sua caixa de spam.
+            </p>
+            <Link href="/login" className="text-sm font-medium text-primary hover:underline pt-2">
                 Voltar para o login
             </Link>
           </CardFooter>

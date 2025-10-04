@@ -248,36 +248,33 @@ export default function DashboardPage() {
             const newList = doc.data().items || [];
             
             if (isInitialShoppingListLoad.current) {
-                setShoppingList(newList);
                 isInitialShoppingListLoad.current = false;
-                return;
-            }
+            } else {
+              const previousList = shoppingList;
+              if (newList.length > previousList.length) {
+                const addedItems = newList.filter((newItem: any) => !previousList.some(oldItem => oldItem.id === newItem.id));
+                if (addedItems.length > 0) {
+                  const newItem = addedItems[addedItems.length - 1];
+                  const notificationTitle = "Novo Item Adicionado!";
+                  const notificationBody = `"${newItem.name}" foi adicionado à sua lista de compras.`;
+                  const message = `*Novo item na lista de compras:*\n\n${newItem.name}`;
 
-            const previousList = shoppingList;
-            setShoppingList(newList);
-
-            if (newList.length > previousList.length) {
-              const addedItems = newList.filter((newItem: any) => !previousList.some(oldItem => oldItem.id === newItem.id));
-              if (addedItems.length > 0) {
-                const newItem = addedItems[addedItems.length - 1];
-                const notificationTitle = "Novo Item Adicionado!";
-                const notificationBody = `"${newItem.name}" foi adicionado à sua lista de compras.`;
-                const message = `*Novo item na lista de compras:*\n\n${newItem.name}`;
-
-                if (document.hidden) {
-                  new Notification(notificationTitle, {
-                    body: notificationBody,
-                    icon: '/images/placeholder-icon.png?v=2',
+                  if (document.hidden) {
+                    new Notification(notificationTitle, {
+                      body: notificationBody,
+                      icon: '/images/placeholder-icon.png?v=2',
+                    });
+                  }
+                  
+                  toast({
+                      title: notificationTitle,
+                      description: notificationBody,
+                      duration: 20000,
                   });
                 }
-                
-                toast({
-                    title: notificationTitle,
-                    description: notificationBody,
-                    duration: 20000,
-                });
               }
             }
+            setShoppingList(newList);
         }
     }, (e) => {
         console.error("Error listening to shopping list: ", e);
@@ -646,10 +643,6 @@ export default function DashboardPage() {
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <p className="text-sm text-foreground">{item.text}</p>
-                                    <Button onClick={() => handleWhatsAppNotification(`*${item.type === 'suggestion' ? 'Nova Sugestão' : `Dúvida de ${item.name}`}:*\n\n${item.text}`)} size="sm">
-                                        <Phone className="mr-2 h-4 w-4"/>
-                                        Notificar por WhatsApp
-                                    </Button>
                                  </CardContent>
                             </Card>
                         ))}

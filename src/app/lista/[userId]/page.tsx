@@ -88,7 +88,7 @@ export default function PublicListPage() {
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
   const userId = params.userId as string;
-  const isInitialShoppingListLoad = useRef(true);
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     if (!userId) {
@@ -158,12 +158,14 @@ export default function PublicListPage() {
               const previousList = shoppingList;
               const newList = doc.data().items || [];
               newList.sort((a: ShoppingListItem, b: ShoppingListItem) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-              setShoppingList(newList);
-
-              if (isInitialShoppingListLoad.current) {
-                isInitialShoppingListLoad.current = false;
+              
+              if (isInitialLoad.current) {
+                setShoppingList(newList);
+                isInitialLoad.current = false;
                 return;
               }
+
+              setShoppingList(newList);
 
               if (newList.length > previousList.length) {
                 const newItem = newList[0];
@@ -195,7 +197,7 @@ export default function PublicListPage() {
       unsubscribeMaterials?.();
       unsubscribeShoppingList?.();
     };
-  }, [userId]);
+  }, [userId, shoppingList]);
   
 
   const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {

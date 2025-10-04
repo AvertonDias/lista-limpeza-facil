@@ -77,6 +77,7 @@ import Header from "@/components/header";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { ToastAction } from "@/components/ui/toast";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -95,6 +96,7 @@ export default function DashboardPage() {
   const [whatsAppNumber, setWhatsAppNumber] = useState("");
 
   const isInitialShoppingListLoad = useRef(true);
+  const isInitialFeedbackLoad = useRef(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -146,6 +148,21 @@ export default function DashboardPage() {
     requestPermissionAndSaveToken(user);
   }, [user]);
   
+  const handleWhatsAppNotification = (text: string) => {
+    const cleanWhatsAppNumber = whatsAppNumber.replace(/\D/g, "");
+    if (!cleanWhatsAppNumber) {
+        toast({
+            variant: "destructive",
+            title: "Número de WhatsApp não definido",
+            description: "Por favor, defina um número de WhatsApp no seu perfil para enviar a notificação.",
+        });
+        return;
+    }
+    const encodedMessage = encodeURIComponent(text);
+    const whatsappUrl = `https://wa.me/${cleanWhatsAppNumber}?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
+  };
+  
   useEffect(() => {
     if (user) {
       // Listen for materials
@@ -173,64 +190,61 @@ export default function DashboardPage() {
         });
         setMaterialsLoading(false);
       });
-
-      // Listen for shopping list
-      const shoppingListDocRef = doc(db, "shoppingLists", user.uid);
-      const unsubscribeShoppingList = onSnapshot(shoppingListDocRef, (doc) => {
-        if (doc.exists()) {
-          setShoppingList(doc.data().items || []);
-        } else {
-            // Create the shopping list if it doesn't exist
-            setDoc(shoppingListDocRef, { userId: user.uid, items: [] });
-        }
-      });
       
       // Listen for feedback
       setFeedbackLoading(true);
       const feedbackQuery = query(collection(db, "feedback"), where("listOwnerId", "==", user.uid));
       const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
-        const newFeedbacks: Feedback[] = [];
-        snapshot.docChanges().forEach((change) => {
-            if (change.type === "added") {
-                const newFeedback = { id: change.doc.id, ...change.doc.data() } as Feedback;
-                newFeedbacks.push(newFeedback);
-            }
-        });
+        const allFeedbacks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
+        setFeedback(allFeedbacks);
 
-        if (newFeedbacks.length > 0) {
-            setFeedback(prev => [...newFeedbacks, ...prev]);
+        if (isInitialFeedbackLoad.current) {
+          isInitialFeedbackLoad.current = false;
+          return;
+        }
+
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === "added") {
+            const newFeedback = { id: change.doc.id, ...change.doc.data() } as Feedback;
+            const notificationTitle = newFeedback.type === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${newFeedback.name}`;
+            const notificationBody = newFeedback.text;
+            
+            const message = `*${notificationTitle}*\n\n${notificationBody}`;
 
             if (document.hidden) {
-                const latestFeedback = newFeedbacks[0];
-                const title = latestFeedback.type === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${latestFeedback.name}`;
-                const body = latestFeedback.text.substring(0, 100) + (latestFeedback.text.length > 100 ? "..." : "");
-                new Notification(title, {
-                    body,
-                    icon: '/images/placeholder-icon.png?v=2',
-                });
+              new Notification(notificationTitle, {
+                  body: notificationBody,
+                  icon: '/images/placeholder-icon.png?v=2',
+              });
             }
-        }
+
+            toast({
+              title: notificationTitle,
+              description: notificationBody,
+              action: (
+                <ToastAction altText="Notificar" onClick={() => handleWhatsAppNotification(message)}>
+                  Notificar por WhatsApp
+                </ToastAction>
+              ),
+              duration: 20000,
+            })
+          }
+        });
         setFeedbackLoading(false);
       }, (error) => {
         console.error("Error fetching feedback: ", error);
-        toast({
-          variant: "destructive",
-          title: "Erro ao buscar feedback",
-          description: "Não foi possível carregar as sugestões e dúvidas.",
-        });
         setFeedbackLoading(false);
       });
 
 
       return () => {
         unsubscribeMaterials();
-        unsubscribeShoppingList();
         unsubscribeFeedback();
       }
     }
   }, [user, toast]);
 
-  useEffect(() => {
+ useEffect(() => {
     if (!user) return;
     
     const shoppingListDocRef = doc(db, "shoppingLists", user.uid);
@@ -249,11 +263,28 @@ export default function DashboardPage() {
 
             if (newList.length > previousList.length) {
               const addedItems = newList.filter((newItem: any) => !previousList.some(oldItem => oldItem.id === newItem.id));
-              if (addedItems.length > 0 && document.hidden) {
+              if (addedItems.length > 0) {
                 const newItem = addedItems[addedItems.length - 1];
-                new Notification("Novo Item Adicionado!", {
-                  body: `"${newItem.name}" foi adicionado à sua lista de compras.`,
-                  icon: '/images/placeholder-icon.png?v=2',
+                const notificationTitle = "Novo Item Adicionado!";
+                const notificationBody = `"${newItem.name}" foi adicionado à sua lista de compras.`;
+                const message = `*Novo item na lista de compras:*\n\n${newItem.name}`;
+
+                if (document.hidden) {
+                  new Notification(notificationTitle, {
+                    body: notificationBody,
+                    icon: '/images/placeholder-icon.png?v=2',
+                  });
+                }
+                
+                toast({
+                    title: notificationTitle,
+                    description: notificationBody,
+                    action: (
+                      <ToastAction altText="Notificar" onClick={() => handleWhatsAppNotification(message)}>
+                        Notificar por WhatsApp
+                      </ToastAction>
+                    ),
+                    duration: 20000,
                 });
               }
             }
@@ -263,7 +294,7 @@ export default function DashboardPage() {
     });
 
     return () => unsubscribeShoppingList();
-  }, [user, shoppingList]);
+  }, [user, shoppingList, toast, whatsAppNumber]);
 
   const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {
     if (!user) return;
@@ -391,22 +422,6 @@ export default function DashboardPage() {
         description: "Não foi possível remover a mensagem.",
       });
     }
-  };
-
-  const handleWhatsAppNotification = (item: Feedback) => {
-    if (!whatsAppNumber.trim()) {
-        toast({
-            variant: "destructive",
-            title: "Número de WhatsApp não definido",
-            description: "Por favor, defina um número de WhatsApp no seu perfil para enviar a notificação.",
-        });
-        return;
-    }
-    const messageType = item.type === 'suggestion' ? 'Nova Sugestão' : `Dúvida de ${item.name}`;
-    const message = `*${messageType}:*\n\n${item.text}`;
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${whatsAppNumber}?text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank');
   };
 
   const filteredMaterials = useMemo(() => {
@@ -641,7 +656,7 @@ export default function DashboardPage() {
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <p className="text-sm text-foreground">{item.text}</p>
-                                    <Button onClick={() => handleWhatsAppNotification(item)} size="sm">
+                                    <Button onClick={() => handleWhatsAppNotification(`*${item.type === 'suggestion' ? 'Nova Sugestão' : `Dúvida de ${item.name}`}:*\n\n${item.text}`)} size="sm">
                                         <Phone className="mr-2 h-4 w-4"/>
                                         Notificar por WhatsApp
                                     </Button>

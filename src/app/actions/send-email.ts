@@ -10,8 +10,14 @@ interface EmailParams {
 }
 
 export async function sendEmailAction(params: EmailParams) {
-  // A inicialização do Resend deve ser feita aqui dentro
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const apiKey = process.env.RESEND_API_KEY;
+
+  if (!apiKey) {
+    console.error("Resend API key is not configured. Please set RESEND_API_KEY in your .env file.");
+    return { success: false, message: "Email configuration is missing." };
+  }
+
+  const resend = new Resend(apiKey);
 
   try {
     const { data, error } = await resend.emails.send({

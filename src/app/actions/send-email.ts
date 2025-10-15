@@ -2,8 +2,6 @@
 
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 interface EmailParams {
   to: string;
   from: string;
@@ -12,6 +10,9 @@ interface EmailParams {
 }
 
 export async function sendEmailAction(params: EmailParams) {
+  // A inicialização do Resend deve ser feita aqui dentro
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   try {
     const { data, error } = await resend.emails.send({
       from: params.from,

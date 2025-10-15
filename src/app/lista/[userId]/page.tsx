@@ -90,7 +90,7 @@ export default function PublicListPage() {
   const [feedbackText, setFeedbackText] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   
-  async function notifyOwnerByEmail(subject: string, message: string) {
+  const notifyOwnerByEmail = useCallback(async (subject: string, message: string) => {
     if (!userId) {
       console.error("ID do usuário para notificação não fornecido.");
       return;
@@ -119,9 +119,9 @@ export default function PublicListPage() {
         console.error("Dono da lista não encontrado para notificação.");
       }
     } catch (err) {
-      console.error('Falha ao buscar usuário ou enviar e-mail:', err);
+      console.error('Falha ao enviar e-mail:', err);
     }
-  }
+  }, [userId]);
 
 
   useEffect(() => {
@@ -254,7 +254,7 @@ export default function PublicListPage() {
           description: `${item.name} foi adicionado à lista de compras.`,
         });
     }
-  }, [shoppingList, updateShoppingListInFirestore, toast, userId]);
+  }, [shoppingList, updateShoppingListInFirestore, toast, userId, notifyOwnerByEmail]);
 
   const handleAddCustomItem = useCallback(async () => {
     if (!customItemName.trim()) {
@@ -283,7 +283,7 @@ export default function PublicListPage() {
       description: `${newItem.name} foi adicionado à lista.`,
     });
     setCustomItemName("");
-  }, [customItemName, shoppingList, updateShoppingListInFirestore, toast, userId]);
+  }, [customItemName, shoppingList, updateShoppingListInFirestore, toast, userId, notifyOwnerByEmail]);
 
   const handleRemoveItemFromShoppingList = useCallback(async (itemId: string) => {
     const updatedList = shoppingList.filter((i) => i.id !== itemId);
@@ -336,7 +336,7 @@ export default function PublicListPage() {
     } finally {
       setIsSubmittingFeedback(false);
     }
-  }, [userId, feedbackType, feedbackText, feedbackName, toast]);
+  }, [userId, feedbackType, feedbackText, feedbackName, toast, notifyOwnerByEmail]);
 
   const shoppingListIds = useMemo(() => new Set(shoppingList.map(item => item.id)), [shoppingList]);
   
@@ -585,3 +585,5 @@ export default function PublicListPage() {
      </div>
   );
 }
+
+    

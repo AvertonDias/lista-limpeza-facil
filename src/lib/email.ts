@@ -2,7 +2,7 @@
 
 import emailjs from '@emailjs/browser';
 
-const SERVICE_ID = 'service_1d5z8n9';
+const SERVICE_ID = 'service_epdy9eq';
 const PUBLIC_KEY = 'Yj5CBlcpbHrHQeYik';
 
 // Inicializa o EmailJS uma vez.

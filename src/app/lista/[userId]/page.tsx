@@ -185,31 +185,37 @@ export default function PublicListPage() {
     };
   }, [userId]);
   
- const notifyOwnerByEmail = async (templateParams: Record<string, unknown>) => {
-    if (!userId) return;
+ const notifyOwnerByEmail = async (subject: string, message: string) => {
+    if (!userId) {
+        console.error("ID do usuário não encontrado.");
+        return;
+    }
 
     try {
-      const userDocRef = doc(db, "users", userId);
-      const userDoc = await getDoc(userDocRef);
+        const userDocRef = doc(db, "users", userId);
+        const userDoc = await getDoc(userDocRef);
 
-      if (userDoc.exists() && userDoc.data()?.email) {
-        const ownerData = userDoc.data();
-        const templateID = 'template_ynk7ot9';
-        
-        await sendEmail(templateID, {
-          ...templateParams,
-          to_email: ownerData.email,
-          to_name: ownerData.displayName || 'Dono(a) da lista',
-        });
+        if (userDoc.exists() && userDoc.data()?.email) {
+            const ownerData = userDoc.data();
+            const templateID = 'template_ynk7ot9';
+            
+            const templateParams = {
+                to_email: ownerData.email,
+                to_name: ownerData.displayName || 'Dono(a) da lista',
+                subject,
+                message,
+            };
 
-        console.log('E-mail de notificação enviado com sucesso!');
-      } else {
-        console.error("Dono da lista não encontrado ou não tem e-mail no documento.");
-      }
+            await sendEmail(templateID, templateParams);
+            console.log('E-mail de notificação enviado com sucesso!');
+
+        } else {
+            console.error("Dono da lista não encontrado ou não tem e-mail no documento.");
+        }
     } catch (err) {
-      console.error('Falha ao buscar usuário ou enviar e-mail.', err);
+        console.error('Falha ao buscar usuário ou enviar e-mail.', err);
     }
-  };
+};
 
 
   const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {
@@ -237,10 +243,10 @@ export default function PublicListPage() {
        updatedList.push(newItem);
         await updateShoppingListInFirestore(updatedList);
         
-        await notifyOwnerByEmail({
-          subject: `Novo item na sua lista: ${newItem.name}`,
-          message: `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras por um visitante.`,
-        });
+        await notifyOwnerByEmail(
+            `Novo item na sua lista: ${newItem.name}`,
+            `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras por um visitante.`
+        );
         
         toast({
           title: "Item Adicionado!",
@@ -266,10 +272,10 @@ export default function PublicListPage() {
     const updatedList = [...shoppingList, newItem];
     await updateShoppingListInFirestore(updatedList);
 
-    await notifyOwnerByEmail({
-        subject: `Novo item (avulso) na sua lista: ${newItem.name}`,
-        message: `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras por um visitante.`,
-    });
+    await notifyOwnerByEmail(
+        `Novo item (avulso) na sua lista: ${newItem.name}`,
+        `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras por um visitante.`
+    );
 
     toast({
       title: "Item Adicionado!",
@@ -306,12 +312,9 @@ export default function PublicListPage() {
 
       const subject = feedbackType === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${feedbackName}`;
       const fromName = feedbackType === 'doubt' ? feedbackName : "Visitante Anônimo";
+      const message = `Você recebeu uma nova mensagem de <strong>${fromName}</strong>.<br><br><strong>Mensagem:</strong><br>${feedbackText}`;
 
-      await notifyOwnerByEmail({
-          subject: subject,
-          message: `Você recebeu uma nova mensagem de <strong>${fromName}</strong>.<br><br><strong>Mensagem:</strong><br>${feedbackText}`,
-      });
-
+      await notifyOwnerByEmail(subject, message);
 
       toast({
         title: "Mensagem Enviada!",

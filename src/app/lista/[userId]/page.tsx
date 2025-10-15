@@ -110,7 +110,11 @@ export default function PublicListPage() {
 
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
-          setPageOwner(userDoc.data() as UserData);
+          const userData = userDoc.data();
+          setPageOwner({ 
+            displayName: userData.displayName || 'Usuário',
+            email: userData.email 
+          });
         } else {
           setPageOwner({ displayName: "Usuário", email: "" });
         }

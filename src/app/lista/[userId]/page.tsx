@@ -187,7 +187,7 @@ export default function PublicListPage() {
   
  const notifyOwnerByEmail = async (subject: string, message: string) => {
     if (!userId) {
-        console.error("ID do usuário não encontrado.");
+        console.error("ID do usuário para notificação não encontrado.");
         return;
     }
 
@@ -202,15 +202,14 @@ export default function PublicListPage() {
             const templateParams = {
                 to_email: ownerData.email,
                 to_name: ownerData.displayName || 'Dono(a) da lista',
-                subject,
-                message,
+                subject: subject,
+                message: message,
             };
-
+            
             await sendEmail(templateID, templateParams);
             console.log('E-mail de notificação enviado com sucesso!');
-
         } else {
-            console.error("Dono da lista não encontrado ou não tem e-mail no documento.");
+            console.error("Dono da lista não encontrado ou não possui e-mail para notificação.");
         }
     } catch (err) {
         console.error('Falha ao buscar usuário ou enviar e-mail.', err);

@@ -220,26 +220,41 @@ export default function DashboardPage() {
   }
 
   const handleAddItemToShoppingList = (item: Material) => {
+    if (!user) return;
     const updatedList = [...shoppingList];
     const existingItem = updatedList.find((i) => i.id === item.id);
     if (!existingItem) {
-      const newItem: ShoppingListItem = { 
-        id: item.id, 
-        name: item.name, 
-        createdAt: Timestamp.now() 
+      const newItem: ShoppingListItem = {
+        id: item.id,
+        name: item.name,
+        createdAt: Timestamp.now(),
       };
       updatedList.push(newItem);
       updateShoppingListInFirestore(updatedList);
+
+      if (user.email) {
+        sendEmailAction({
+          to: user.email,
+          from: "Lista de Compras <notificacao@resend.dev>",
+          subject: `Item adicionado: ${newItem.name}`,
+          html: `<p>Olá ${
+            user.displayName || "Usuário"
+          },</p><p>Você adicionou o item <strong>${
+            newItem.name
+          }</strong> à sua lista de compras.</p>`,
+        });
+      }
+
       toast({
         title: "Item Adicionado!",
         description: `${item.name} foi adicionado à sua lista de compras.`,
       });
     } else {
-        toast({
-            variant: "destructive",
-            title: "Item já existe",
-            description: `${item.name} já está na sua lista de compras.`,
-        });
+      toast({
+        variant: "destructive",
+        title: "Item já existe",
+        description: `${item.name} já está na sua lista de compras.`,
+      });
     }
   };
 
@@ -630,3 +645,5 @@ export default function DashboardPage() {
         </div>
     </div>);
 }
+
+    

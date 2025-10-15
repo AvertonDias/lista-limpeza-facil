@@ -117,12 +117,10 @@ export default function PublicListPage() {
               email: userData.email 
             });
           } else {
-             console.error("Documento do usuário não contém e-mail.");
-             setError("Não foi possível encontrar o e-mail do proprietário da lista.");
+             setError("Não foi possível encontrar as informações do proprietário da lista.");
              setPageOwner(null);
           }
         } else {
-          console.error("Documento do usuário não encontrado.");
           setError("Não foi possível encontrar o proprietário da lista.");
           setPageOwner(null);
         }
@@ -192,25 +190,33 @@ export default function PublicListPage() {
     };
   }, [userId]);
   
-  const notifyOwnerByEmail = (templateParams: Record<string, unknown>) => {
-    if (!pageOwner?.email) {
-      console.log("Dono da lista não tem e-mail, não é possível notificar.");
-      return;
-    }
-    
-    const templateID = 'template_ynk7ot9'; 
+ const notifyOwnerByEmail = async (templateParams: Record<string, unknown>) => {
+    if (!userId) return;
 
-    sendEmail(templateID, {
-      ...templateParams,
-      to_email: pageOwner.email,
-      to_name: pageOwner.displayName,
-    })
-    .then((response) => {
-       console.log('E-mail enviado com sucesso!', response.status, response.text);
-    }, (err) => {
-       console.error('Falha ao enviar e-mail.', err);
-    });
-  }
+    try {
+      const userDocRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userDocRef);
+
+      if (!userDoc.exists() || !userDoc.data()?.email) {
+        console.error("Dono da lista não encontrado ou não tem e-mail.");
+        return;
+      }
+
+      const ownerData = userDoc.data();
+      const templateID = 'template_ynk7ot9'; 
+
+      await sendEmail(templateID, {
+        ...templateParams,
+        to_email: ownerData.email,
+        to_name: ownerData.displayName || 'Dono(a) da lista',
+      });
+
+      console.log('E-mail de notificação enviado com sucesso!');
+
+    } catch (err) {
+      console.error('Falha ao buscar usuário ou enviar e-mail.', err);
+    }
+  };
 
 
   const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {
@@ -582,5 +588,3 @@ export default function PublicListPage() {
      </div>
   );
 }
-
-    

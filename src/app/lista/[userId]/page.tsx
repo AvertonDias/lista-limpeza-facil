@@ -69,9 +69,10 @@ interface UserData {
 type FeedbackType = "suggestion" | "doubt" | null;
 
 export default function PublicListPage() {
-  const { toast } = useToast();
   const params = useParams();
   const userId = params.userId as string;
+
+  const { toast } = useToast();
 
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -88,10 +89,10 @@ export default function PublicListPage() {
   const [feedbackName, setFeedbackName] = useState("");
   const [feedbackText, setFeedbackText] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
-
+  
   const notifyOwnerByEmail = useCallback(async (subject: string, message: string) => {
     if (!userId) {
-        console.error("ID do usuário para notificação não encontrado no momento da chamada.");
+        console.error("ID do usuário para notificação não encontrado.");
         return;
     }
 
@@ -101,7 +102,6 @@ export default function PublicListPage() {
 
         if (userDoc.exists() && userDoc.data()?.email) {
             const ownerData = userDoc.data();
-            const templateID = 'template_ynk7ot9';
             
             const templateParams = {
                 to_email: ownerData.email,
@@ -110,13 +110,15 @@ export default function PublicListPage() {
                 message: message,
             };
             
-            await sendEmail(templateID, templateParams);
+            await sendEmail('template_ynk7ot9', templateParams);
             console.log('E-mail de notificação enviado com sucesso!');
+
         } else {
             console.error("Dono da lista não encontrado ou não possui e-mail para notificação.");
         }
-    } catch (err) {
-        console.error('Falha ao buscar usuário ou enviar e-mail.', err);
+    } catch (err: any) {
+        console.error('Falha ao enviar e-mail:', err);
+        // Silenciosamente falha para o usuário final, mas loga o erro para depuração.
     }
   }, [userId]);
 
@@ -582,3 +584,5 @@ export default function PublicListPage() {
      </div>
   );
 }
+
+    

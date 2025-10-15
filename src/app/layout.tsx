@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { AuthProvider } from "@/components/auth-provider";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
-import { ForegroundNotificationHandler } from "@/components/foreground-notification-handler";
 
 export const metadata: Metadata = {
   title: "Lista de Limpeza Fácil",
@@ -33,7 +32,6 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProvider>
-          <ForegroundNotificationHandler />
           {children}
           <Toaster />
         </AuthProvider>

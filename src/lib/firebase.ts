@@ -3,7 +3,6 @@
 import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, createUserWithEmailAndPassword, UserCredential, sendPasswordResetEmail, verifyPasswordResetCode, confirmPasswordReset } from "firebase/auth";
 import { getFirestore, arrayUnion, arrayRemove } from "firebase/firestore";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 // Your web app's Firebase configuration
 export const firebaseConfig: FirebaseOptions = {
@@ -20,12 +19,12 @@ export const firebaseConfig: FirebaseOptions = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-// Get a messaging instance, only on the client
-const messaging = (typeof window !== 'undefined' && typeof Notification !== 'undefined')
-  ? getMessaging(app)
-  : null;
+const messaging = null; // Removido
 
 
-export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, getToken, arrayRemove, arrayUnion, onMessage, sendPasswordResetEmail, verifyPasswordResetCode, confirmPasswordReset };
+export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, arrayRemove, arrayUnion, onMessage, sendPasswordResetEmail, verifyPasswordResetCode, confirmPasswordReset };
 export type { User, UserCredential };
+
+// A função onMessage não está mais disponível aqui, pois o messaging foi removido.
+// Se precisar usar, terá que ser re-introduzido.
+const onMessage = () => { console.warn("Firebase Messaging não está mais configurado.")};

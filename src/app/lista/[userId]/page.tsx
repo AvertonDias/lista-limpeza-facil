@@ -59,6 +59,7 @@ import { useParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { sendEmail } from "@/lib/email";
 
 interface UserData {
     displayName?: string;
@@ -88,7 +89,6 @@ export default function PublicListPage() {
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
   const userId = params.userId as string;
-  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     if (!userId) {
@@ -112,7 +112,7 @@ export default function PublicListPage() {
         if (userDoc.exists()) {
           setPageOwner(userDoc.data() as UserData);
         } else {
-          setPageOwner({ displayName: "Usuário" });
+          setPageOwner({ displayName: "Usuário", email: "" });
         }
 
         const materialsSnapshot = await getDocs(materialsQuery);
@@ -129,7 +129,6 @@ export default function PublicListPage() {
           items.sort((a: ShoppingListItem, b: ShoppingListItem) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
           setShoppingList(items);
         } else {
-          // If the shopping list doesn't exist, create it.
           await setDoc(shoppingListDocRef, { userId: userId, items: [] });
         }
 
@@ -155,27 +154,9 @@ export default function PublicListPage() {
           shoppingListDocRef,
           (doc) => {
             if (doc.exists()) {
-              const previousList = shoppingList;
               const newList = doc.data().items || [];
               newList.sort((a: ShoppingListItem, b: ShoppingListItem) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
-              
-              if (isInitialLoad.current) {
-                setShoppingList(newList);
-                isInitialLoad.current = false;
-                return;
-              }
-
               setShoppingList(newList);
-
-              if (newList.length > previousList.length) {
-                const newItem = newList[0];
-                if (document.hidden) {
-                  new Notification("Novo Item Adicionado!", {
-                    body: `"${newItem.name}" foi adicionado à sua lista de compras.`,
-                    icon: '/images/placeholder-icon.png?v=2',
-                  });
-                }
-              }
             }
           },
           (e) => {
@@ -224,9 +205,20 @@ export default function PublicListPage() {
        };
        updatedList.push(newItem);
         await updateShoppingListInFirestore(updatedList);
+
+        if(pageOwner?.email) {
+          sendEmail({
+            to_email: pageOwner.email,
+            to_name: pageOwner.displayName || 'Usuário',
+            subject: 'Novo item na sua lista!',
+            message: `O item "${newItem.name}" foi adicionado à sua lista de compras por um visitante.`,
+            from_name: 'Visitante da Lista'
+          });
+        }
+        
         toast({
-        title: "Item Adicionado!",
-        description: `${item.name} foi adicionado à lista de compras.`,
+          title: "Item Adicionado!",
+          description: `${item.name} foi adicionado à lista de compras.`,
         });
     }
   };
@@ -247,6 +239,17 @@ export default function PublicListPage() {
     };
     const updatedList = [...shoppingList, newItem];
     await updateShoppingListInFirestore(updatedList);
+
+    if(pageOwner?.email) {
+      sendEmail({
+        to_email: pageOwner.email,
+        to_name: pageOwner.displayName || 'Usuário',
+        subject: 'Novo item (avulso) na sua lista!',
+        message: `O item avulso "${newItem.name}" foi adicionado à sua lista de compras por um visitante.`,
+        from_name: 'Visitante da Lista'
+      });
+    }
+
     toast({
       title: "Item Adicionado!",
       description: `${newItem.name} foi adicionado à lista.`,
@@ -279,6 +282,19 @@ export default function PublicListPage() {
         createdAt: serverTimestamp(),
         status: "new",
       });
+
+      if(pageOwner?.email) {
+        const subject = feedbackType === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${feedbackName}`;
+        const fromName = feedbackType === 'doubt' ? feedbackName : "Visitante Anônimo";
+        sendEmail({
+          to_email: pageOwner.email,
+          to_name: pageOwner.displayName || 'Usuário',
+          subject: subject,
+          message: feedbackText,
+          from_name: fromName
+        });
+      }
+
       toast({
         title: "Mensagem Enviada!",
         description: "Obrigado pelo seu feedback.",

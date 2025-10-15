@@ -3,8 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import { db, messaging, getToken } from "@/lib/firebase";
-import { VAPID_KEY } from "@/lib/vapidKey";
+import { db } from "@/lib/firebase";
 import {
   collection,
   query,
@@ -77,7 +76,7 @@ import Header from "@/components/header";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
-import { ToastAction } from "@/components/ui/toast";
+import { sendEmail } from "@/lib/email";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -96,72 +95,12 @@ export default function DashboardPage() {
   const [whatsAppNumber, setWhatsAppNumber] = useState("");
 
   const isInitialShoppingListLoad = useRef(true);
-  const isInitialFeedbackLoad = useRef(true);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
     }
   }, [user, loading, router]);
-
-  // Request permission and save FCM token
-  useEffect(() => {
-    if (!user) return;
-    const requestPermissionAndSaveToken = async (currentUser: typeof user) => {
-        try {
-          if ('Notification' in window && messaging) {
-            const permission = await Notification.requestPermission();
-            if (permission === 'granted') {
-              const currentToken = await getToken(messaging, { vapidKey: VAPID_KEY });
-              if (currentToken) {
-                console.log('FCM Token:', currentToken);
-                
-                const userDocRef = doc(db, 'users', currentUser.uid);
-                const userDoc = await getDoc(userDocRef);
-                
-                if(userDoc.exists()) {
-                  const userData = userDoc.data();
-                  const existingTokens = userData.fcmTokens || [];
-                  if (!existingTokens.includes(currentToken)) {
-                     await updateDoc(userDocRef, { 
-                      fcmTokens: arrayUnion(currentToken)
-                    });
-                    console.log('FCM token saved successfully.');
-                  } else {
-                    console.log('FCM token already exists for this user.');
-                  }
-                  
-                  // Set user data to state
-                  if (userData.whatsapp) setWhatsAppNumber(userData.whatsapp);
-                }
-              } else {
-                console.log('No registration token available. Request permission to generate one.');
-              }
-            } else {
-              console.log('Unable to get permission to notify.');
-            }
-          }
-        } catch (error) {
-          console.error('An error occurred while retrieving token. ', error);
-        }
-    };
-    requestPermissionAndSaveToken(user);
-  }, [user]);
-  
-  const handleWhatsAppNotification = (text: string) => {
-    const cleanWhatsAppNumber = whatsAppNumber.replace(/\D/g, "");
-    if (!cleanWhatsAppNumber) {
-        toast({
-            variant: "destructive",
-            title: "Número de WhatsApp não definido",
-            description: "Por favor, defina um número de WhatsApp no seu perfil para enviar a notificação.",
-        });
-        return;
-    }
-    const encodedMessage = encodeURIComponent(text);
-    const whatsappUrl = `https://wa.me/55${cleanWhatsAppNumber}?text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank');
-  };
   
   useEffect(() => {
     if (user) {
@@ -198,28 +137,24 @@ export default function DashboardPage() {
         const allFeedbacks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
         setFeedback(allFeedbacks);
 
-        if (isInitialFeedbackLoad.current) {
-          isInitialFeedbackLoad.current = false;
-          setFeedbackLoading(false);
-          return;
-        }
-
         snapshot.docChanges().forEach((change) => {
           if (change.type === "added") {
             const newFeedback = { id: change.doc.id, ...change.doc.data() } as Feedback;
-            const notificationTitle = newFeedback.type === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${newFeedback.name}`;
-            const notificationBody = newFeedback.text;
-            
-            const message = `*${notificationTitle}*\n\n${notificationBody}`;
+            const subject = newFeedback.type === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${newFeedback.name}`;
+            const fromName = newFeedback.type === 'doubt' ? newFeedback.name : "Visitante Anônimo";
 
-            if (document.hidden) {
-              new Notification(notificationTitle, {
-                  body: notificationBody,
-                  icon: '/images/placeholder-icon.png?v=2',
+            if(user.email){
+              sendEmail({
+                to_email: user.email,
+                to_name: user.displayName || 'Usuário',
+                subject: subject,
+                message: newFeedback.text,
+                from_name: fromName || "Visitante"
               });
             }
           }
         });
+
         setFeedbackLoading(false);
       }, (error) => {
         console.error("Error fetching feedback: ", error);
@@ -246,20 +181,18 @@ export default function DashboardPage() {
                 isInitialShoppingListLoad.current = false;
             } else {
               const previousList = shoppingList;
-              if (newList.length > previousList.length) {
+              if (newList.length > previousList.length && user.email) {
                 const addedItems = newList.filter((newItem: any) => !previousList.some(oldItem => oldItem.id === newItem.id));
                 if (addedItems.length > 0) {
                   const newItem = addedItems[addedItems.length - 1];
-                  const notificationTitle = "Novo Item Adicionado!";
-                  const notificationBody = `"${newItem.name}" foi adicionado à sua lista de compras.`;
-                  const message = `*Novo item na lista de compras:*\n\n${newItem.name}`;
 
-                  if (document.hidden) {
-                    new Notification(notificationTitle, {
-                      body: notificationBody,
-                      icon: '/images/placeholder-icon.png?v=2',
-                    });
-                  }
+                  sendEmail({
+                      to_email: user.email,
+                      to_name: user.displayName || 'Usuário',
+                      subject: 'Novo item na sua lista!',
+                      message: `O item "${newItem.name}" foi adicionado à sua lista de compras.`,
+                      from_name: "Visitante da Lista"
+                  });
                 }
               }
             }
@@ -270,7 +203,7 @@ export default function DashboardPage() {
     });
 
     return () => unsubscribeShoppingList();
-  }, [user, whatsAppNumber]);
+  }, [user, shoppingList]);
 
   const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {
     if (!user) return;

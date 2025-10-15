@@ -26,6 +26,7 @@ import { updateProfile } from "firebase/auth";
 
 
 export default function SignupPage() {
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -62,6 +63,14 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!name.trim()) {
+        toast({
+            variant: "destructive",
+            title: "Campo obrigatório",
+            description: "Por favor, preencha seu nome.",
+        });
+        return;
+    }
     if (password !== confirmPassword) {
       toast({
         variant: "destructive",
@@ -76,7 +85,7 @@ export default function SignupPage() {
       const newUser = userCredential.user;
       if (newUser) {
         
-        const displayName = newUser.email!.split('@')[0];
+        const displayName = name.trim();
         
         // Update Firebase Auth Profile
         await updateProfile(newUser, { displayName });
@@ -140,6 +149,17 @@ export default function SignupPage() {
         </CardHeader>
         <form onSubmit={handleSignup}>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Seu nome completo"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input

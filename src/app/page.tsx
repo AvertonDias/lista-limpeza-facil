@@ -76,7 +76,7 @@ import Header from "@/components/header";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
-import { sendEmailAction } from "@/app/actions/send-email";
+import emailjs from '@emailjs/browser';
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -104,6 +104,9 @@ export default function DashboardPage() {
   
   useEffect(() => {
     if (user) {
+      // Init EmailJS
+      emailjs.init({ publicKey: "Yj5CBlcpbHrHQeYik" });
+      
       // Listen for materials
       setMaterialsLoading(true);
       const materialsQuery = query(collection(db, "materials"), where("userId", "==", user.uid));
@@ -136,27 +139,6 @@ export default function DashboardPage() {
       const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
         const allFeedbacks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
         setFeedback(allFeedbacks);
-
-        snapshot.docChanges().forEach((change) => {
-            if (change.type === "added") {
-                const newFeedback = { id: change.doc.id, ...change.doc.data() } as Feedback;
-                if (user.email) {
-                    const subject = newFeedback.type === 'suggestion' 
-                        ? 'Nova Sugestão Recebida!' 
-                        : `Nova Dúvida de ${newFeedback.name || 'Visitante'}`;
-                    const fromName = newFeedback.type === 'doubt' ? newFeedback.name : "Visitante Anônimo";
-
-                    sendEmailAction({
-                        to: user.email,
-                        from: 'Lista de Compras <onboarding@resend.dev>',
-                        subject: subject,
-                        html: `<p>Olá ${user.displayName || 'Usuário'},</p><p>Você recebeu uma nova mensagem de <strong>${fromName}</strong>.</p><p><strong>Mensagem:</strong></p><blockquote style="border-left: 2px solid #eee; padding-left: 1rem; margin-left: 0;">${newFeedback.text}</blockquote>`
-                    });
-                }
-            }
-        });
-
-
         setFeedbackLoading(false);
       }, (error) => {
         console.error("Error fetching feedback: ", error);
@@ -183,13 +165,6 @@ export default function DashboardPage() {
             
             if (isInitialShoppingListLoad.current) {
                 isInitialShoppingListLoad.current = false;
-            } else {
-              if (newList.length > previousList.length && user.email) {
-                const addedItems = newList.filter((newItem: any) => !previousList.some(oldItem => oldItem.id === newItem.id));
-                if (addedItems.length > 0) {
-                  const newItem = addedItems[addedItems.length - 1];
-                }
-              }
             }
             // Update both the state and the ref for the next comparison
             setShoppingList(newList);

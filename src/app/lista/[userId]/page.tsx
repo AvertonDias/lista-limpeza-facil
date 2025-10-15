@@ -59,7 +59,7 @@ import { useParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { sendEmailAction } from "@/app/actions/send-email";
+import emailjs from '@emailjs/browser';
 
 interface UserData {
     displayName?: string;
@@ -89,6 +89,10 @@ export default function PublicListPage() {
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
   const userId = params.userId as string;
+
+  useEffect(() => {
+    emailjs.init({ publicKey: "Yj5CBlcpbHrHQeYik" });
+  }, []);
 
   useEffect(() => {
     if (!userId) {
@@ -180,6 +184,27 @@ export default function PublicListPage() {
     };
   }, [userId]);
   
+  const sendEmail = (templateParams: Record<string, unknown>) => {
+    if (!pageOwner?.email) {
+      console.log("Dono da lista não tem e-mail, não é possível notificar.");
+      return;
+    }
+
+    const serviceID = 'service_1d5z8n9';
+    const templateID = 'template_8g7z4yq'; 
+    
+    emailjs.send(serviceID, templateID, {
+      ...templateParams,
+      to_email: pageOwner.email,
+      to_name: pageOwner.displayName || 'Usuário',
+    })
+    .then((response) => {
+       console.log('E-mail enviado com sucesso!', response.status, response.text);
+    }, (err) => {
+       console.error('Falha ao enviar e-mail.', err);
+    });
+  }
+
 
   const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {
     if (!userId) return;
@@ -205,15 +230,11 @@ export default function PublicListPage() {
        };
        updatedList.push(newItem);
         await updateShoppingListInFirestore(updatedList);
-
-        if(pageOwner?.email) {
-            sendEmailAction({
-                to: pageOwner.email,
-                from: 'Lista de Compras <onboarding@resend.dev>',
-                subject: `Novo item na sua lista: ${newItem.name}`,
-                html: `<p>Olá ${pageOwner.displayName || 'Usuário'},</p><p>O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras por um visitante.</p>`
-            });
-        }
+        
+        sendEmail({
+          subject: `Novo item na sua lista: ${newItem.name}`,
+          message: `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras por um visitante.`,
+        });
         
         toast({
           title: "Item Adicionado!",
@@ -239,14 +260,10 @@ export default function PublicListPage() {
     const updatedList = [...shoppingList, newItem];
     await updateShoppingListInFirestore(updatedList);
 
-    if(pageOwner?.email) {
-      sendEmailAction({
-        to: pageOwner.email,
-        from: 'Lista de Compras <onboarding@resend.dev>',
+    sendEmail({
         subject: `Novo item (avulso) na sua lista: ${newItem.name}`,
-        html: `<p>Olá ${pageOwner.displayName || 'Usuário'},</p><p>O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras por um visitante.</p>`
-      });
-    }
+        message: `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras por um visitante.`,
+    });
 
     toast({
       title: "Item Adicionado!",
@@ -281,16 +298,14 @@ export default function PublicListPage() {
         status: "new",
       });
 
-      if(pageOwner?.email) {
-        const subject = feedbackType === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${feedbackName}`;
-        const fromName = feedbackType === 'doubt' ? feedbackName : "Visitante Anônimo";
-        sendEmailAction({
-            to: pageOwner.email,
-            from: 'Lista de Compras <onboarding@resend.dev>',
-            subject: subject,
-            html: `<p>Olá ${pageOwner.displayName || 'Usuário'},</p><p>Você recebeu uma nova mensagem de <strong>${fromName}</strong>.</p><p><strong>Mensagem:</strong></p><p>${feedbackText}</p>`
-        });
-      }
+      const subject = feedbackType === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${feedbackName}`;
+      const fromName = feedbackType === 'doubt' ? feedbackName : "Visitante Anônimo";
+
+      sendEmail({
+          subject: subject,
+          message: `Você recebeu uma nova mensagem de <strong>${fromName}</strong>.<br><br><strong>Mensagem:</strong><br>${feedbackText}`,
+      });
+
 
       toast({
         title: "Mensagem Enviada!",

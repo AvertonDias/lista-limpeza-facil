@@ -62,8 +62,8 @@ import { ptBR } from "date-fns/locale";
 import { sendEmail } from "@/lib/email";
 
 interface UserData {
-    displayName?: string;
-    email?: string;
+    displayName: string;
+    email: string;
 }
 
 type FeedbackType = "suggestion" | "doubt" | null;
@@ -111,12 +111,17 @@ export default function PublicListPage() {
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          setPageOwner({ 
-            displayName: userData.displayName || 'Dono(a) da Lista',
-            email: userData.email 
-          });
+          if (userData.email) {
+             setPageOwner({ 
+              displayName: userData.displayName || 'Dono(a) da Lista',
+              email: userData.email 
+            });
+          } else {
+             console.error("Documento do usuário não contém e-mail.");
+             setError("Não foi possível encontrar o e-mail do proprietário da lista.");
+             setPageOwner(null);
+          }
         } else {
-          // If the user document doesn't exist, we can't get the email.
           console.error("Documento do usuário não encontrado.");
           setError("Não foi possível encontrar o proprietário da lista.");
           setPageOwner(null);
@@ -198,7 +203,7 @@ export default function PublicListPage() {
     sendEmail(templateID, {
       ...templateParams,
       to_email: pageOwner.email,
-      to_name: pageOwner.displayName || 'Dono(a) da Lista',
+      to_name: pageOwner.displayName,
     })
     .then((response) => {
        console.log('E-mail enviado com sucesso!', response.status, response.text);

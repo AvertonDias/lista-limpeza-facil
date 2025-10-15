@@ -112,11 +112,14 @@ export default function PublicListPage() {
         if (userDoc.exists()) {
           const userData = userDoc.data();
           setPageOwner({ 
-            displayName: userData.displayName || 'Usuário',
+            displayName: userData.displayName || 'Dono(a) da Lista',
             email: userData.email 
           });
         } else {
-          setPageOwner({ displayName: "Usuário", email: "" });
+          // If the user document doesn't exist, we can't get the email.
+          console.error("Documento do usuário não encontrado.");
+          setError("Não foi possível encontrar o proprietário da lista.");
+          setPageOwner(null);
         }
 
         const materialsSnapshot = await getDocs(materialsQuery);
@@ -195,7 +198,7 @@ export default function PublicListPage() {
     sendEmail(templateID, {
       ...templateParams,
       to_email: pageOwner.email,
-      to_name: pageOwner.displayName || 'Usuário',
+      to_name: pageOwner.displayName || 'Dono(a) da Lista',
     })
     .then((response) => {
        console.log('E-mail enviado com sucesso!', response.status, response.text);
@@ -574,3 +577,5 @@ export default function PublicListPage() {
      </div>
   );
 }
+
+    

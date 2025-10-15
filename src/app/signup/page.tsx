@@ -22,6 +22,7 @@ import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import { doc, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { updateProfile } from "firebase/auth";
 
 
 export default function SignupPage() {
@@ -72,14 +73,22 @@ export default function SignupPage() {
     setIsSubmitting(true);
     try {
       const userCredential = await signup(email, password);
-      if (userCredential.user) {
+      const newUser = userCredential.user;
+      if (newUser) {
+        
+        const displayName = newUser.email!.split('@')[0];
+        
+        // Update Firebase Auth Profile
+        await updateProfile(newUser, { displayName });
+
         // Create user document in Firestore
-        const userDocRef = doc(db, "users", userCredential.user.uid);
+        const userDocRef = doc(db, "users", newUser.uid);
         const digitsOnly = whatsapp.replace(/\D/g, "");
 
         await setDoc(userDocRef, {
-          email: userCredential.user.email,
-          displayName: userCredential.user.displayName,
+          uid: newUser.uid,
+          email: newUser.email,
+          displayName: displayName,
           createdAt: new Date(),
           whatsapp: digitsOnly,
         }, { merge: true });
@@ -217,3 +226,5 @@ export default function SignupPage() {
     </div>
   );
 }
+
+    

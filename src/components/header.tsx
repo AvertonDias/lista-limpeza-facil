@@ -27,7 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons/logo";
 import { LogOut, User, Edit, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { doc, updateDoc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { updateProfile } from "firebase/auth";
 
@@ -41,18 +41,29 @@ export default function Header() {
   const [whatsappNumber, setWhatsappNumber] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  const [currentUserData, setCurrentUserData] = useState({
+    displayName: "",
+    photoURL: "",
+  });
+
   useEffect(() => {
     if (user) {
-      setDisplayName(user.displayName || "");
       const userDocRef = doc(db, "users", user.uid);
-      getDoc(userDocRef).then((docSnap) => {
+      const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
         if (docSnap.exists()) {
-          const rawNumber = docSnap.data()?.whatsapp || "";
+          const userData = docSnap.data();
+          setCurrentUserData({
+            displayName: userData.displayName || user.email || "Usuário",
+            photoURL: user.photoURL || "",
+          });
+          setDisplayName(userData.displayName || "");
+          const rawNumber = userData.whatsapp || "";
           setWhatsappNumber(formatWhatsApp(rawNumber));
         }
       });
+      return () => unsubscribe();
     }
-  }, [user, isProfileModalOpen]);
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -63,9 +74,9 @@ export default function Header() {
     if (!user) return;
     setIsSaving(true);
     try {
-      // Save only the digits to Firestore
       const digitsOnly = whatsappNumber.replace(/\D/g, "");
       const userDocRef = doc(db, "users", user.uid);
+      
       await updateDoc(userDocRef, {
         displayName: displayName,
         whatsapp: digitsOnly,
@@ -131,15 +142,15 @@ export default function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-10 w-10">
-                    <AvatarImage src={user.photoURL || undefined} alt={user.displayName || ""} />
-                    <AvatarFallback>{user.displayName ? getInitials(user.displayName) : <User />}</AvatarFallback>
+                    <AvatarImage src={currentUserData.photoURL || undefined} alt={currentUserData.displayName || ""} />
+                    <AvatarFallback>{currentUserData.displayName ? getInitials(currentUserData.displayName) : <User />}</AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{user.displayName || 'Usuário'}</p>
+                    <p className="text-sm font-medium leading-none">{currentUserData.displayName || 'Usuário'}</p>
                     <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
                   </div>
                 </DropdownMenuLabel>
@@ -204,3 +215,5 @@ export default function Header() {
     </>
   );
 }
+
+    

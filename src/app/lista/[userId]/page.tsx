@@ -111,15 +111,10 @@ export default function PublicListPage() {
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          if (userData.email) {
-             setPageOwner({ 
-              displayName: userData.displayName || 'Dono(a) da Lista',
-              email: userData.email 
-            });
-          } else {
-             setError("Não foi possível encontrar as informações do proprietário da lista.");
-             setPageOwner(null);
-          }
+          setPageOwner({ 
+            displayName: userData.displayName || 'Dono(a) da Lista',
+            email: userData.email || ''
+          });
         } else {
           setError("Não foi possível encontrar o proprietário da lista.");
           setPageOwner(null);
@@ -197,22 +192,20 @@ export default function PublicListPage() {
       const userDocRef = doc(db, "users", userId);
       const userDoc = await getDoc(userDocRef);
 
-      if (!userDoc.exists() || !userDoc.data()?.email) {
-        console.error("Dono da lista não encontrado ou não tem e-mail.");
-        return;
+      if (userDoc.exists() && userDoc.data()?.email) {
+        const ownerData = userDoc.data();
+        const templateID = 'template_ynk7ot9';
+        
+        await sendEmail(templateID, {
+          ...templateParams,
+          to_email: ownerData.email,
+          to_name: ownerData.displayName || 'Dono(a) da lista',
+        });
+
+        console.log('E-mail de notificação enviado com sucesso!');
+      } else {
+        console.error("Dono da lista não encontrado ou não tem e-mail no documento.");
       }
-
-      const ownerData = userDoc.data();
-      const templateID = 'template_ynk7ot9'; 
-
-      await sendEmail(templateID, {
-        ...templateParams,
-        to_email: ownerData.email,
-        to_name: ownerData.displayName || 'Dono(a) da lista',
-      });
-
-      console.log('E-mail de notificação enviado com sucesso!');
-
     } catch (err) {
       console.error('Falha ao buscar usuário ou enviar e-mail.', err);
     }
@@ -244,7 +237,7 @@ export default function PublicListPage() {
        updatedList.push(newItem);
         await updateShoppingListInFirestore(updatedList);
         
-        notifyOwnerByEmail({
+        await notifyOwnerByEmail({
           subject: `Novo item na sua lista: ${newItem.name}`,
           message: `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras por um visitante.`,
         });
@@ -273,7 +266,7 @@ export default function PublicListPage() {
     const updatedList = [...shoppingList, newItem];
     await updateShoppingListInFirestore(updatedList);
 
-    notifyOwnerByEmail({
+    await notifyOwnerByEmail({
         subject: `Novo item (avulso) na sua lista: ${newItem.name}`,
         message: `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras por um visitante.`,
     });
@@ -314,7 +307,7 @@ export default function PublicListPage() {
       const subject = feedbackType === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${feedbackName}`;
       const fromName = feedbackType === 'doubt' ? feedbackName : "Visitante Anônimo";
 
-      notifyOwnerByEmail({
+      await notifyOwnerByEmail({
           subject: subject,
           message: `Você recebeu uma nova mensagem de <strong>${fromName}</strong>.<br><br><strong>Mensagem:</strong><br>${feedbackText}`,
       });

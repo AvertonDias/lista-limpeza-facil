@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -68,9 +68,30 @@ interface UserData {
 
 type FeedbackType = "suggestion" | "doubt" | null;
 
-const notifyOwnerByEmail = async (userId: string, subject: string, message: string) => {
+export default function PublicListPage() {
+  const { toast } = useToast();
+  const params = useParams();
+  const userId = params.userId as string;
+
+  const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [pageOwner, setPageOwner] = useState<UserData | null>(null);
+  const [customItemName, setCustomItemName] = useState("");
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Feedback Modal State
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<FeedbackType>(null);
+  const [feedbackName, setFeedbackName] = useState("");
+  const [feedbackText, setFeedbackText] = useState("");
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+
+  const notifyOwnerByEmail = useCallback(async (subject: string, message: string) => {
     if (!userId) {
-        console.error("ID do usuário para notificação não encontrado.");
+        console.error("ID do usuário para notificação não encontrado no momento da chamada.");
         return;
     }
 
@@ -97,28 +118,8 @@ const notifyOwnerByEmail = async (userId: string, subject: string, message: stri
     } catch (err) {
         console.error('Falha ao buscar usuário ou enviar e-mail.', err);
     }
-};
+  }, [userId]);
 
-export default function PublicListPage() {
-  const { toast } = useToast();
-  const params = useParams();
-  const userId = params.userId as string;
-
-  const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [pageLoading, setPageLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [pageOwner, setPageOwner] = useState<UserData | null>(null);
-  const [customItemName, setCustomItemName] = useState("");
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  // Feedback Modal State
-  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
-  const [feedbackType, setFeedbackType] = useState<FeedbackType>(null);
-  const [feedbackName, setFeedbackName] = useState("");
-  const [feedbackText, setFeedbackText] = useState("");
-  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
   useEffect(() => {
     if (!userId) {
@@ -215,13 +216,13 @@ export default function PublicListPage() {
     };
   }, [userId]);
   
-  const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {
+  const updateShoppingListInFirestore = useCallback(async (newList: ShoppingListItem[]) => {
     if (!userId) return;
     const shoppingListDocRef = doc(db, "shoppingLists", userId);
     await setDoc(shoppingListDocRef, { items: newList, userId: userId }, { merge: true });
-  }
+  }, [userId]);
   
-  const handleToggleItemInShoppingList = async (item: Material) => {
+  const handleToggleItemInShoppingList = useCallback(async (item: Material) => {
     const updatedList = [...shoppingList];
     const existingItemIndex = updatedList.findIndex((i) => i.id === item.id);
     
@@ -241,7 +242,6 @@ export default function PublicListPage() {
         await updateShoppingListInFirestore(updatedList);
         
         await notifyOwnerByEmail(
-            userId,
             `Novo item na sua lista: ${newItem.name}`,
             `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras por um visitante.`
         );
@@ -251,9 +251,9 @@ export default function PublicListPage() {
           description: `${item.name} foi adicionado à lista de compras.`,
         });
     }
-  };
+  }, [shoppingList, updateShoppingListInFirestore, notifyOwnerByEmail, toast]);
 
-  const handleAddCustomItem = async () => {
+  const handleAddCustomItem = useCallback(async () => {
     if (!customItemName.trim()) {
       toast({
         variant: "destructive",
@@ -271,7 +271,6 @@ export default function PublicListPage() {
     await updateShoppingListInFirestore(updatedList);
 
     await notifyOwnerByEmail(
-        userId,
         `Novo item (avulso) na sua lista: ${newItem.name}`,
         `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras por um visitante.`
     );
@@ -281,14 +280,14 @@ export default function PublicListPage() {
       description: `${newItem.name} foi adicionado à lista.`,
     });
     setCustomItemName("");
-  };
+  }, [customItemName, shoppingList, updateShoppingListInFirestore, notifyOwnerByEmail, toast]);
 
-  const handleRemoveItemFromShoppingList = async (itemId: string) => {
+  const handleRemoveItemFromShoppingList = useCallback(async (itemId: string) => {
     const updatedList = shoppingList.filter((i) => i.id !== itemId);
     await updateShoppingListInFirestore(updatedList);
-  };
+  }, [shoppingList, updateShoppingListInFirestore]);
   
-  const handleFeedbackSubmit = async () => {
+  const handleFeedbackSubmit = useCallback(async () => {
     if (!feedbackType || !feedbackText.trim() || (feedbackType === 'doubt' && !feedbackName.trim())) {
       toast({
         variant: "destructive",
@@ -313,7 +312,7 @@ export default function PublicListPage() {
       const fromName = feedbackType === 'doubt' ? feedbackName : "Visitante Anônimo";
       const message = `Você recebeu uma nova mensagem de <strong>${fromName}</strong>.<br><br><strong>Mensagem:</strong><br>${feedbackText}`;
 
-      await notifyOwnerByEmail(userId, subject, message);
+      await notifyOwnerByEmail(subject, message);
 
       toast({
         title: "Mensagem Enviada!",
@@ -334,7 +333,7 @@ export default function PublicListPage() {
     } finally {
       setIsSubmittingFeedback(false);
     }
-  };
+  }, [userId, feedbackType, feedbackText, feedbackName, notifyOwnerByEmail, toast]);
 
   const shoppingListIds = useMemo(() => new Set(shoppingList.map(item => item.id)), [shoppingList]);
   

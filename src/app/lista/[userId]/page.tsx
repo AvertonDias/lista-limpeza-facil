@@ -68,9 +68,41 @@ interface UserData {
 
 type FeedbackType = "suggestion" | "doubt" | null;
 
+const notifyOwnerByEmail = async (userId: string, subject: string, message: string) => {
+    if (!userId) {
+        console.error("ID do usuário para notificação não encontrado.");
+        return;
+    }
+
+    try {
+        const userDocRef = doc(db, "users", userId);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists() && userDoc.data()?.email) {
+            const ownerData = userDoc.data();
+            const templateID = 'template_ynk7ot9';
+            
+            const templateParams = {
+                to_email: ownerData.email,
+                to_name: ownerData.displayName || 'Dono(a) da lista',
+                subject: subject,
+                message: message,
+            };
+            
+            await sendEmail(templateID, templateParams);
+            console.log('E-mail de notificação enviado com sucesso!');
+        } else {
+            console.error("Dono da lista não encontrado ou não possui e-mail para notificação.");
+        }
+    } catch (err) {
+        console.error('Falha ao buscar usuário ou enviar e-mail.', err);
+    }
+};
+
 export default function PublicListPage() {
   const { toast } = useToast();
   const params = useParams();
+  const userId = params.userId as string;
 
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -87,8 +119,6 @@ export default function PublicListPage() {
   const [feedbackName, setFeedbackName] = useState("");
   const [feedbackText, setFeedbackText] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
-
-  const userId = params.userId as string;
 
   useEffect(() => {
     if (!userId) {
@@ -185,38 +215,6 @@ export default function PublicListPage() {
     };
   }, [userId]);
   
- const notifyOwnerByEmail = async (subject: string, message: string) => {
-    if (!userId) {
-        console.error("ID do usuário para notificação não encontrado.");
-        return;
-    }
-
-    try {
-        const userDocRef = doc(db, "users", userId);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists() && userDoc.data()?.email) {
-            const ownerData = userDoc.data();
-            const templateID = 'template_ynk7ot9';
-            
-            const templateParams = {
-                to_email: ownerData.email,
-                to_name: ownerData.displayName || 'Dono(a) da lista',
-                subject: subject,
-                message: message,
-            };
-            
-            await sendEmail(templateID, templateParams);
-            console.log('E-mail de notificação enviado com sucesso!');
-        } else {
-            console.error("Dono da lista não encontrado ou não possui e-mail para notificação.");
-        }
-    } catch (err) {
-        console.error('Falha ao buscar usuário ou enviar e-mail.', err);
-    }
-};
-
-
   const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {
     if (!userId) return;
     const shoppingListDocRef = doc(db, "shoppingLists", userId);
@@ -243,6 +241,7 @@ export default function PublicListPage() {
         await updateShoppingListInFirestore(updatedList);
         
         await notifyOwnerByEmail(
+            userId,
             `Novo item na sua lista: ${newItem.name}`,
             `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras por um visitante.`
         );
@@ -272,6 +271,7 @@ export default function PublicListPage() {
     await updateShoppingListInFirestore(updatedList);
 
     await notifyOwnerByEmail(
+        userId,
         `Novo item (avulso) na sua lista: ${newItem.name}`,
         `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras por um visitante.`
     );
@@ -313,7 +313,7 @@ export default function PublicListPage() {
       const fromName = feedbackType === 'doubt' ? feedbackName : "Visitante Anônimo";
       const message = `Você recebeu uma nova mensagem de <strong>${fromName}</strong>.<br><br><strong>Mensagem:</strong><br>${feedbackText}`;
 
-      await notifyOwnerByEmail(subject, message);
+      await notifyOwnerByEmail(userId, subject, message);
 
       toast({
         title: "Mensagem Enviada!",

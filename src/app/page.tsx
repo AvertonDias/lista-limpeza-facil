@@ -148,12 +148,9 @@ export default function DashboardPage() {
 
                     sendEmailAction({
                         to: user.email,
-                        from: 'Lista de Compras <notificacao@resend.dev>',
+                        from: 'Lista de Compras <onboarding@resend.dev>',
                         subject: subject,
-                        html: `<p>Olá ${user.displayName || 'Usuário'},</p>
-                               <p>Você recebeu uma nova mensagem de <strong>${fromName}</strong>.</p>
-                               <p><strong>Mensagem:</strong></p>
-                               <blockquote style="border-left: 2px solid #eee; padding-left: 1rem; margin-left: 0;">${newFeedback.text}</blockquote>`
+                        html: `<p>Olá ${user.displayName || 'Usuário'},</p><p>Você recebeu uma nova mensagem de <strong>${fromName}</strong>.</p><p><strong>Mensagem:</strong></p><blockquote style="border-left: 2px solid #eee; padding-left: 1rem; margin-left: 0;">${newFeedback.text}</blockquote>`
                     });
                 }
             }
@@ -191,14 +188,6 @@ export default function DashboardPage() {
                 const addedItems = newList.filter((newItem: any) => !previousList.some(oldItem => oldItem.id === newItem.id));
                 if (addedItems.length > 0) {
                   const newItem = addedItems[addedItems.length - 1];
-
-                   sendEmailAction({
-                        to: user.email,
-                        from: 'Lista de Compras <notificacao@resend.dev>',
-                        subject: `Novo item na sua lista: ${newItem.name}`,
-                        html: `<p>Olá ${user.displayName || 'Usuário'},</p>
-                               <p>O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras por um visitante.</p>`
-                    });
                 }
               }
             }

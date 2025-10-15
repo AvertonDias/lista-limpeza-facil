@@ -209,10 +209,9 @@ export default function PublicListPage() {
         if(pageOwner?.email) {
             sendEmailAction({
                 to: pageOwner.email,
-                from: 'Lista de Compras <notificacao@resend.dev>',
-                subject: `Item adicionado: ${newItem.name}`,
-                html: `<p>Olá ${pageOwner.displayName || 'Usuário'},</p>
-                       <p>Um visitante adicionou o item <strong>${newItem.name}</strong> à sua lista de compras.</p>`
+                from: 'Lista de Compras <onboarding@resend.dev>',
+                subject: `Novo item na sua lista: ${newItem.name}`,
+                html: `<p>Olá ${pageOwner.displayName || 'Usuário'},</p><p>O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras por um visitante.</p>`
             });
         }
         
@@ -243,10 +242,9 @@ export default function PublicListPage() {
     if(pageOwner?.email) {
       sendEmailAction({
         to: pageOwner.email,
-        from: 'Lista de Compras <notificacao@resend.dev>',
-        subject: `Item (avulso) adicionado: ${newItem.name}`,
-        html: `<p>Olá ${pageOwner.displayName || 'Usuário'},</p>
-               <p>Um visitante adicionou o item avulso "<strong>${newItem.name}</strong>" à sua lista de compras.</p>`
+        from: 'Lista de Compras <onboarding@resend.dev>',
+        subject: `Novo item (avulso) na sua lista: ${newItem.name}`,
+        html: `<p>Olá ${pageOwner.displayName || 'Usuário'},</p><p>O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras por um visitante.</p>`
       });
     }
 
@@ -288,12 +286,9 @@ export default function PublicListPage() {
         const fromName = feedbackType === 'doubt' ? feedbackName : "Visitante Anônimo";
         sendEmailAction({
             to: pageOwner.email,
-            from: 'Lista de Compras <notificacao@resend.dev>',
+            from: 'Lista de Compras <onboarding@resend.dev>',
             subject: subject,
-            html: `<p>Olá ${pageOwner.displayName || 'Usuário'},</p>
-                   <p>Você recebeu uma nova mensagem de <strong>${fromName}</strong>.</p>
-                   <p><strong>Mensagem:</strong></p>
-                   <p>${feedbackText}</p>`
+            html: `<p>Olá ${pageOwner.displayName || 'Usuário'},</p><p>Você recebeu uma nova mensagem de <strong>${fromName}</strong>.</p><p><strong>Mensagem:</strong></p><p>${feedbackText}</p>`
         });
       }
 

@@ -59,7 +59,7 @@ import { useParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { sendEmail } from "@/lib/email";
+import { sendEmailAction } from "@/app/actions/send-email";
 
 interface UserData {
     displayName?: string;
@@ -207,13 +207,13 @@ export default function PublicListPage() {
         await updateShoppingListInFirestore(updatedList);
 
         if(pageOwner?.email) {
-          sendEmail({
-            to_email: pageOwner.email,
-            to_name: pageOwner.displayName || 'Usuário',
-            subject: 'Novo item na sua lista!',
-            message: `O item "${newItem.name}" foi adicionado à sua lista de compras por um visitante.`,
-            from_name: 'Visitante da Lista'
-          });
+            sendEmailAction({
+                to: pageOwner.email,
+                from: 'Lista de Compras <notificacao@resend.dev>',
+                subject: `Item adicionado: ${newItem.name}`,
+                html: `<p>Olá ${pageOwner.displayName || 'Usuário'},</p>
+                       <p>Um visitante adicionou o item <strong>${newItem.name}</strong> à sua lista de compras.</p>`
+            });
         }
         
         toast({
@@ -241,12 +241,12 @@ export default function PublicListPage() {
     await updateShoppingListInFirestore(updatedList);
 
     if(pageOwner?.email) {
-      sendEmail({
-        to_email: pageOwner.email,
-        to_name: pageOwner.displayName || 'Usuário',
-        subject: 'Novo item (avulso) na sua lista!',
-        message: `O item avulso "${newItem.name}" foi adicionado à sua lista de compras por um visitante.`,
-        from_name: 'Visitante da Lista'
+      sendEmailAction({
+        to: pageOwner.email,
+        from: 'Lista de Compras <notificacao@resend.dev>',
+        subject: `Item (avulso) adicionado: ${newItem.name}`,
+        html: `<p>Olá ${pageOwner.displayName || 'Usuário'},</p>
+               <p>Um visitante adicionou o item avulso "<strong>${newItem.name}</strong>" à sua lista de compras.</p>`
       });
     }
 
@@ -286,12 +286,14 @@ export default function PublicListPage() {
       if(pageOwner?.email) {
         const subject = feedbackType === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${feedbackName}`;
         const fromName = feedbackType === 'doubt' ? feedbackName : "Visitante Anônimo";
-        sendEmail({
-          to_email: pageOwner.email,
-          to_name: pageOwner.displayName || 'Usuário',
-          subject: subject,
-          message: feedbackText,
-          from_name: fromName
+        sendEmailAction({
+            to: pageOwner.email,
+            from: 'Lista de Compras <notificacao@resend.dev>',
+            subject: subject,
+            html: `<p>Olá ${pageOwner.displayName || 'Usuário'},</p>
+                   <p>Você recebeu uma nova mensagem de <strong>${fromName}</strong>.</p>
+                   <p><strong>Mensagem:</strong></p>
+                   <p>${feedbackText}</p>`
         });
       }
 

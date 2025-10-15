@@ -76,7 +76,7 @@ import Header from "@/components/header";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
-import { sendEmail } from "@/lib/email";
+import { sendEmailAction } from "@/app/actions/send-email";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -138,22 +138,27 @@ export default function DashboardPage() {
         setFeedback(allFeedbacks);
 
         snapshot.docChanges().forEach((change) => {
-          if (change.type === "added") {
-            const newFeedback = { id: change.doc.id, ...change.doc.data() } as Feedback;
-            const subject = newFeedback.type === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${newFeedback.name}`;
-            const fromName = newFeedback.type === 'doubt' ? newFeedback.name : "Visitante Anônimo";
+            if (change.type === "added") {
+                const newFeedback = { id: change.doc.id, ...change.doc.data() } as Feedback;
+                if (user.email) {
+                    const subject = newFeedback.type === 'suggestion' 
+                        ? 'Nova Sugestão Recebida!' 
+                        : `Nova Dúvida de ${newFeedback.name || 'Visitante'}`;
+                    const fromName = newFeedback.type === 'doubt' ? newFeedback.name : "Visitante Anônimo";
 
-            if(user.email){
-              sendEmail({
-                to_email: user.email,
-                to_name: user.displayName || 'Usuário',
-                subject: subject,
-                message: newFeedback.text,
-                from_name: fromName || "Visitante"
-              });
+                    sendEmailAction({
+                        to: user.email,
+                        from: 'Lista de Compras <notificacao@resend.dev>',
+                        subject: subject,
+                        html: `<p>Olá ${user.displayName || 'Usuário'},</p>
+                               <p>Você recebeu uma nova mensagem de <strong>${fromName}</strong>.</p>
+                               <p><strong>Mensagem:</strong></p>
+                               <blockquote style="border-left: 2px solid #eee; padding-left: 1rem; margin-left: 0;">${newFeedback.text}</blockquote>`
+                    });
+                }
             }
-          }
         });
+
 
         setFeedbackLoading(false);
       }, (error) => {
@@ -172,6 +177,8 @@ export default function DashboardPage() {
  useEffect(() => {
     if (!user) return;
     
+    let previousList = [...shoppingList];
+
     const shoppingListDocRef = doc(db, "shoppingLists", user.uid);
     const unsubscribeShoppingList = onSnapshot(shoppingListDocRef, (doc) => {
         if (doc.exists()) {
@@ -180,30 +187,31 @@ export default function DashboardPage() {
             if (isInitialShoppingListLoad.current) {
                 isInitialShoppingListLoad.current = false;
             } else {
-              const previousList = shoppingList;
               if (newList.length > previousList.length && user.email) {
                 const addedItems = newList.filter((newItem: any) => !previousList.some(oldItem => oldItem.id === newItem.id));
                 if (addedItems.length > 0) {
                   const newItem = addedItems[addedItems.length - 1];
 
-                  sendEmail({
-                      to_email: user.email,
-                      to_name: user.displayName || 'Usuário',
-                      subject: 'Novo item na sua lista!',
-                      message: `O item "${newItem.name}" foi adicionado à sua lista de compras.`,
-                      from_name: "Visitante da Lista"
-                  });
+                   sendEmailAction({
+                        to: user.email,
+                        from: 'Lista de Compras <notificacao@resend.dev>',
+                        subject: `Novo item na sua lista: ${newItem.name}`,
+                        html: `<p>Olá ${user.displayName || 'Usuário'},</p>
+                               <p>O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras por um visitante.</p>`
+                    });
                 }
               }
             }
+            // Update both the state and the ref for the next comparison
             setShoppingList(newList);
+            previousList = [...newList];
         }
     }, (e) => {
         console.error("Error listening to shopping list: ", e);
     });
 
     return () => unsubscribeShoppingList();
-  }, [user, shoppingList]);
+  }, [user]);
 
   const updateShoppingListInFirestore = async (newList: ShoppingListItem[]) => {
     if (!user) return;

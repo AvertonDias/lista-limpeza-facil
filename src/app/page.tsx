@@ -232,19 +232,6 @@ export default function DashboardPage() {
       updatedList.push(newItem);
       updateShoppingListInFirestore(updatedList);
 
-      if (user.email) {
-        sendEmailAction({
-          to: user.email,
-          from: "Lista de Compras <notificacao@resend.dev>",
-          subject: `Item adicionado: ${newItem.name}`,
-          html: `<p>Olá ${
-            user.displayName || "Usuário"
-          },</p><p>Você adicionou o item <strong>${
-            newItem.name
-          }</strong> à sua lista de compras.</p>`,
-        });
-      }
-
       toast({
         title: "Item Adicionado!",
         description: `${item.name} foi adicionado à sua lista de compras.`,

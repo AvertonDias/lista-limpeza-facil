@@ -234,7 +234,7 @@ export default function PublicListPage() {
         
         await notifyOwnerByEmail(
             `Lista de Limpeza Fácil: Novo Item Adicionado`,
-            `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras por um visitante.`
+            `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras.`
         );
         
         toast({
@@ -263,7 +263,7 @@ export default function PublicListPage() {
 
     await notifyOwnerByEmail(
         `Lista de Limpeza Fácil: Novo Item Avulso Adicionado`,
-        `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras por um visitante.`
+        `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras.`
     );
 
     toast({
@@ -591,5 +591,7 @@ export default function PublicListPage() {
 
 
 
+
+    
 
     

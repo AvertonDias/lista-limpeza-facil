@@ -91,31 +91,47 @@ export default function PublicListPage() {
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   
   const notifyOwnerByEmail = useCallback(async (subject: string, message: string) => {
-    if (pageOwner && pageOwner.email) {
-      try {
-        const templateParams = {
-          to_email: pageOwner.email,
-          to_name: pageOwner.displayName || 'Dono(a) da lista',
-          subject: subject,
-          message: message,
-        };
-        await sendEmail('template_ynk7ot9', templateParams);
-        console.log('E-mail de notificação enviado com sucesso!');
-      } catch (err) {
-        console.error('Falha ao enviar e-mail:', err);
-      }
-    } else {
-      console.error("Dono da lista não tem e-mail, não é possível notificar.");
+    if (!userId) {
+      console.error("ID do usuário para notificação não fornecido na notifyOwnerByEmail.");
+      return;
     }
-  }, [pageOwner]);
+    console.log("userId na notifyOwnerByEmail:", userId);
+    
+    try {
+      const userDocRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const ownerData = userDoc.data();
+        console.log("Email recuperado do Firestore:", ownerData?.email); // Adicione este log!
+        if (ownerData && ownerData.email && ownerData.email.trim() !== '') {
+            const templateParams = {
+              to_email: ownerData.email,
+              to_name: ownerData.displayName || 'Dono(a) da lista',
+              subject: subject,
+              message: message,
+            };
+            await sendEmail('template_ynk7ot9', templateParams);
+            console.log('E-mail de notificação enviado com sucesso!');
+        } else {
+             console.error("Dono da lista não tem um e-mail válido para notificação.");
+        }
+      } else {
+        console.log("Documento do usuário não encontrado para o ID:", userId);
+      }
+    } catch (err) {
+      console.error('Falha ao buscar usuário ou enviar e-mail:', err);
+    }
+  }, [userId]);
 
 
   useEffect(() => {
     if (!userId) {
+      console.error("ID de usuário inválido.");
       setError("ID de usuário inválido.");
       setPageLoading(false);
       return;
     }
+    console.log("userId em uso:", userId);
 
     let unsubscribeMaterials: (() => void) | undefined;
     let unsubscribeShoppingList: (() => void) | undefined;

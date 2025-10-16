@@ -103,17 +103,16 @@ export default function PublicListPage() {
       if (userDoc.exists()) {
         const ownerData = userDoc.data();
         if (ownerData && ownerData.email) {
-            const templateParams = {
-              to_email: ownerData.email,
-              to_name: ownerData.displayName || 'Dono(a) da lista',
-              subject: subject,
-              message: message,
-            };
-
-            await sendEmail('template_ynk7ot9', templateParams);
-            console.log('E-mail de notificação enviado com sucesso!');
+          const templateParams = {
+            to_email: ownerData.email,
+            to_name: ownerData.displayName || 'Dono(a) da lista',
+            subject: subject,
+            message: message,
+          };
+          await sendEmail('template_ynk7ot9', templateParams);
+          console.log('E-mail de notificação enviado com sucesso!');
         } else {
-            console.error("Dono da lista não tem e-mail, não é possível notificar.");
+          console.error("Dono da lista não tem e-mail, não é possível notificar.");
         }
       } else {
         console.error("Dono da lista não encontrado para notificação.");
@@ -254,7 +253,7 @@ export default function PublicListPage() {
           description: `${item.name} foi adicionado à lista de compras.`,
         });
     }
-  }, [shoppingList, updateShoppingListInFirestore, toast, userId, notifyOwnerByEmail]);
+  }, [shoppingList, updateShoppingListInFirestore, toast, notifyOwnerByEmail]);
 
   const handleAddCustomItem = useCallback(async () => {
     if (!customItemName.trim()) {
@@ -283,7 +282,7 @@ export default function PublicListPage() {
       description: `${newItem.name} foi adicionado à lista.`,
     });
     setCustomItemName("");
-  }, [customItemName, shoppingList, updateShoppingListInFirestore, toast, userId, notifyOwnerByEmail]);
+  }, [customItemName, shoppingList, updateShoppingListInFirestore, toast, notifyOwnerByEmail]);
 
   const handleRemoveItemFromShoppingList = useCallback(async (itemId: string) => {
     const updatedList = shoppingList.filter((i) => i.id !== itemId);
@@ -585,5 +584,3 @@ export default function PublicListPage() {
      </div>
   );
 }
-
-    

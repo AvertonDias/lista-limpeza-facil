@@ -365,17 +365,6 @@ export default function PublicListPage() {
 
   const renderShoppingList = () => (
     <>
-      <div className="w-full space-y-2 mb-4">
-        <Input 
-          type="text" 
-          placeholder="Adicionar item avulso"
-          value={customItemName}
-          onChange={(e) => setCustomItemName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
-        />
-        <Button type="submit" onClick={handleAddCustomItem} className="w-full">Adicionar</Button>
-      </div>
-      <Separator className="mb-4" />
       {shoppingList.length > 0 ? (
         <div className="space-y-4">
           <ul className="space-y-3">
@@ -515,6 +504,20 @@ export default function PublicListPage() {
                             className="w-full pl-10"
                         />
                     </div>
+                    <div className="w-full space-y-2 mb-6">
+                      <Label>Adicionar item avulso</Label>
+                      <div className="flex gap-2">
+                        <Input 
+                          type="text" 
+                          placeholder="Ex: Pano de chão"
+                          value={customItemName}
+                          onChange={(e) => setCustomItemName(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
+                        />
+                        <Button type="submit" onClick={handleAddCustomItem}>Adicionar</Button>
+                      </div>
+                    </div>
+                    <Separator className="mb-6"/>
                      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
                         {filteredMaterials.map((material) => {
                             const isInList = shoppingListIds.has(material.id);
@@ -589,3 +592,4 @@ export default function PublicListPage() {
 }
 
     
+

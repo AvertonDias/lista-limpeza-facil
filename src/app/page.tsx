@@ -71,12 +71,14 @@ import {
   Lightbulb,
   ShoppingCart,
   Phone,
+  Package,
 } from "lucide-react";
 import Header from "@/components/header";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import emailjs from '@emailjs/browser';
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -338,19 +340,27 @@ export default function DashboardPage() {
           {shoppingList.map((item) => (
             <li
               key={item.id}
-              className="flex items-center justify-between"
+              className="flex items-center justify-between p-2 rounded-lg hover:bg-muted"
             >
-              <div>
-                <p className="font-medium">{item.name}</p>
-                {item.createdAt && (
-                  <p className="text-xs text-muted-foreground">
-                    {formatItemDate(item.createdAt)}
-                  </p>
-                )}
+              <div className="flex items-center gap-3">
+                 <Avatar className="h-8 w-8 bg-muted">
+                    <AvatarFallback>
+                        <Package className="h-4 w-4 text-muted-foreground" />
+                    </AvatarFallback>
+                </Avatar>
+                <div>
+                    <p className="font-medium">{item.name}</p>
+                    {item.createdAt && (
+                    <p className="text-xs text-muted-foreground">
+                        {formatItemDate(item.createdAt)}
+                    </p>
+                    )}
+                </div>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-8 w-8"
                 onClick={() => handleRemoveItemFromShoppingList(item.id)}
               >
                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -361,21 +371,22 @@ export default function DashboardPage() {
         <Separator />
       </div>
     ) : (
-      <div className="text-center text-muted-foreground py-8">
-        <p>Sua lista de compras está vazia.</p>
+      <div className="text-center text-muted-foreground py-8 space-y-2">
+        <ShoppingCart className="mx-auto h-12 w-12" />
+        <p className="font-medium">Sua lista de compras está vazia.</p>
         <p className="text-sm">
-          Clique nos itens para adicionar.
+          Clique nos itens disponíveis para adicionar.
         </p>
       </div>
     )}
     </>
   );
   return (
-    <div className="flex min-h-screen w-full flex-col">
+    <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <Header />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-24">
-        <div className="grid gap-8 md:grid-cols-3">
-          <div className="md:col-span-2 space-y-8">
+        <div className="grid gap-8 lg:grid-cols-5">
+          <div className="lg:col-span-3 xl:col-span-4 space-y-8">
            <div>
               <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
                 <h1 className="font-headline text-3xl font-bold tracking-tight">
@@ -385,7 +396,7 @@ export default function DashboardPage() {
                   
                   <Button onClick={handleSharePublicList} variant="outline">
                       <BookUser className="mr-2" />
-                      Compartilhar Materiais
+                      Compartilhar
                   </Button>
                   <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
                       setIsFormOpen(isOpen);
@@ -436,7 +447,7 @@ export default function DashboardPage() {
                       placeholder="Pesquisar material..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10"
+                      className="w-full pl-10 bg-background"
                   />
               </div>
 
@@ -445,24 +456,24 @@ export default function DashboardPage() {
                       <Loader2 className="h-12 w-12 animate-spin text-primary" />
                   </div>
               ) : filteredMaterials.length > 0 ? (
-                  <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {filteredMaterials.map((material) => (
                       <Card
                       key={material.id}
-                      className="flex flex-col overflow-hidden transition-shadow hover:shadow-lg group cursor-pointer"
+                      className="group/item flex flex-col overflow-hidden transition-shadow hover:shadow-lg cursor-pointer bg-background"
                       onClick={() => handleAddItemToShoppingList(material)}
                       >
-                      <CardHeader className="flex-row items-center justify-between">
-                          <CardTitle className="font-headline text-lg">
+                      <CardHeader className="flex-row items-start justify-between p-4">
+                          <CardTitle className="font-headline text-base font-semibold leading-snug">
                           {material.name}
                           </CardTitle>
-                          <div className="flex justify-end gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {e.stopPropagation(); handleOpenForm(material)}}>
+                          <div className="flex flex-col gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => {e.stopPropagation(); handleOpenForm(material)}}>
                                   <Edit className="h-4 w-4" />
                               </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {e.stopPropagation()}}>
+                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => {e.stopPropagation()}}>
                                       <Trash2 className="h-4 w-4 text-destructive" />
                                   </Button>
                                 </AlertDialogTrigger>
@@ -485,14 +496,14 @@ export default function DashboardPage() {
                   ))}
                   </div>
               ) : (
-                  <div className="text-center text-muted-foreground py-16">
-                      <p className="text-lg">{searchQuery ? "Nenhum item encontrado." : "Tente uma busca diferente."}</p>
-                      <p>{searchQuery ? "Tente uma busca diferente." : "Clique em 'Adicionar Item' para começar."}</p>
+                  <div className="text-center text-muted-foreground py-16 rounded-lg bg-background">
+                      <p className="text-lg font-medium">{searchQuery ? "Nenhum item encontrado" : "Nenhum material cadastrado"}</p>
+                      <p className="text-sm">{searchQuery ? "Tente uma busca diferente." : "Clique em 'Adicionar Item' para começar."}</p>
                   </div>
               )}
             </div>
 
-            <div>
+            <div id="feedback">
                 <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
                     <h2 className="font-headline text-3xl font-bold tracking-tight">
                     Sugestões e Dúvidas
@@ -505,7 +516,7 @@ export default function DashboardPage() {
                 ) : feedback.length > 0 ? (
                     <div className="space-y-4">
                         {feedback.map(item => (
-                            <Card key={item.id}>
+                            <Card key={item.id} className="bg-background">
                                 <CardHeader className="flex flex-row justify-between items-start">
                                     <div>
                                         <CardTitle className="flex items-center gap-2 text-lg">
@@ -543,16 +554,16 @@ export default function DashboardPage() {
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center text-muted-foreground py-16">
-                        <p className="text-lg">Nenhuma sugestão ou dúvida recebida.</p>
-                        <p>As mensagens enviadas pela página pública aparecerão aqui.</p>
+                    <div className="text-center text-muted-foreground py-16 bg-background rounded-lg">
+                        <p className="text-lg font-medium">Nenhuma mensagem recebida.</p>
+                        <p className="text-sm">As sugestões e dúvidas enviadas pela página pública aparecerão aqui.</p>
                     </div>
                 )}
             </div>
 
           </div>
-          <div className="hidden md:block md:col-span-1">
-            <Card className="sticky top-24">
+          <div className="hidden lg:block lg:col-span-2 xl:col-span-1">
+            <Card className="sticky top-24 bg-background">
               <CardHeader>
                 <CardTitle className="font-headline text-2xl">
                   Sua Lista de Compras
@@ -567,7 +578,7 @@ export default function DashboardPage() {
       </main>
       
       {/* Mobile Sheet and FAB */}
-      <div className="md:hidden">
+      <div className="lg:hidden">
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetTrigger asChild>
                      <Button className="fixed bottom-6 right-6 z-40 h-16 w-16 rounded-full shadow-lg">
@@ -595,5 +606,3 @@ export default function DashboardPage() {
         </div>
     </div>);
 }
-
-    

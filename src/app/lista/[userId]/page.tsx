@@ -294,12 +294,14 @@ export default function PublicListPage() {
         listOwnerId: userId,
         type: feedbackType,
         text: feedbackText,
-        name: feedbackType === 'doubt' ? feedbackName : null,
+        name: feedbackType === 'doubt' ? feedbackName : "Anônimo",
         createdAt: serverTimestamp(),
         status: "new",
       });
 
-      const subject = feedbackType === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${feedbackName}`;
+      const subject = feedbackType === 'suggestion' 
+          ? 'Lista de Limpeza Fácil: Nova Sugestão Recebida' 
+          : 'Lista de Limpeza Fácil: Nova Dúvida Recebida';
       const fromName = feedbackType === 'doubt' ? feedbackName : "Visitante Anônimo";
       const message = `Você recebeu uma nova mensagem de <strong>${fromName}</strong>.<br><br><strong>Mensagem:</strong><br>${feedbackText}`;
 
@@ -578,6 +580,7 @@ export default function PublicListPage() {
 }
 
     
+
 
 
 

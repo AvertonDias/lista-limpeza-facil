@@ -90,12 +90,13 @@ export default function PublicListPage() {
   const [feedbackText, setFeedbackText] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
   
-  const notifyOwnerByEmail = useCallback(async (subject: string, message: string) => {
+  const notifyOwnerByEmail = useCallback(async (subject: string, message: string, fromName: string) => {
     if (pageOwner && pageOwner.email) {
       try {
         const templateParams = {
           to_email: pageOwner.email,
           to_name: pageOwner.displayName || 'Dono(a) da lista',
+          from_name: fromName,
           subject: subject,
           message: message,
         };
@@ -234,7 +235,8 @@ export default function PublicListPage() {
         
         await notifyOwnerByEmail(
             `Lista de Limpeza Fácil: Novo Item Adicionado`,
-            `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras.`
+            `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras.`,
+            `Notificação da Lista`
         );
         
         toast({
@@ -263,7 +265,8 @@ export default function PublicListPage() {
 
     await notifyOwnerByEmail(
         `Lista de Limpeza Fácil: Novo Item Avulso Adicionado`,
-        `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras.`
+        `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras.`,
+        `Notificação da Lista`
     );
 
     toast({
@@ -310,7 +313,7 @@ export default function PublicListPage() {
         message = `Você recebeu uma nova mensagem de <strong>${feedbackName}</strong>.<br><br><strong>Mensagem:</strong><br>${feedbackText}`;
       }
 
-      await notifyOwnerByEmail(subject, message);
+      await notifyOwnerByEmail(subject, message, 'Feedback da Lista');
 
       toast({
         title: "Mensagem Enviada!",

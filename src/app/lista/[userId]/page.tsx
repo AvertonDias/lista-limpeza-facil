@@ -1,108 +1,128 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useParams } from "next/navigation";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { db } from "@/lib/firebase";
 import {
   collection,
   query,
   where,
   getDoc,
+  getDocs,
   doc,
   onSnapshot,
   setDoc,
+  addDoc,
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { sendEmail } from "@/lib/email";
-import FeedbackModal from "@/components/FeedbackModal";
-import Loader from "@/components/Loader";
-import { useToast } from "@/hooks/use-toast";
+import type { Material, ShoppingListItem } from "@/types";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PlusCircle, MessageSquare } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+  SheetFooter
+} from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Loader2,
+  Trash2,
+  ShoppingCart,
+  Search,
+  MessageSquarePlus,
+} from "lucide-react";
 import { Logo } from "@/components/icons/logo";
+import { CheckIcon } from "@/components/icons/check-icon";
+import { PlusIcon } from "@/components/icons/plus-icon";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useParams } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { sendEmail } from "@/lib/email";
 
-interface Material {
-  id: string;
-  name: string;
-  createdAt?: Timestamp | null;
+interface UserData {
+    displayName: string;
+    email: string;
 }
 
-interface ShoppingItem {
-  id: string;
-  materialId: string;
-  userId: string;
-  createdAt: Timestamp;
-}
+type FeedbackType = "suggestion" | "doubt" | null;
 
-export default function MaterialsPage() {
+export default function PublicListPage() {
   const params = useParams();
   const userId = params.userId as string;
+
   const { toast } = useToast();
 
+  const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [pageOwner, setPageOwner] = useState<UserData | null>(null);
+  const [customItemName, setCustomItemName] = useState("");
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const formatItemDate = (timestamp?: Timestamp | null) => {
-    if (!timestamp || typeof timestamp.toDate !== "function") return null;
-    return format(timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
-  };
-
-  const notifyOwnerByEmail = useCallback(
-    async (materialId: string) => {
-      if (!userId) return;
-
-      try {
-        const userDocRef = doc(db, "users", userId);
-        const userDoc = await getDoc(userDocRef);
-
-        if (!userDoc.exists()) {
-          throw new Error("Usuário (dono da lista) não encontrado.");
-        }
+  // Feedback Modal State
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+  const [feedbackType, setFeedbackType] = useState<FeedbackType>(null);
+  const [feedbackName, setFeedbackName] = useState("");
+  const [feedbackText, setFeedbackText] = useState("");
+  const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
+  
+  const notifyOwnerByEmail = useCallback(async (subject: string, message: string) => {
+    if (!userId) {
+      console.error("ID do usuário para notificação não fornecido.");
+      return;
+    }
+  
+    try {
+      const userDocRef = doc(db, "users", userId);
+      const userDoc = await getDoc(userDocRef);
+  
+      if (userDoc.exists()) {
         const ownerData = userDoc.data();
-        const ownerEmail = ownerData.email;
+        if (ownerData && ownerData.email) {
+            const templateParams = {
+              to_email: ownerData.email,
+              to_name: ownerData.displayName || 'Dono(a) da lista',
+              subject: subject,
+              message: message,
+            };
 
-        if (!ownerEmail) {
-          throw new Error("O dono da lista não possui um e-mail configurado.");
+            await sendEmail('template_ynk7ot9', templateParams);
+            console.log('E-mail de notificação enviado com sucesso!');
+        } else {
+            console.error("Dono da lista não tem e-mail, não é possível notificar.");
         }
-
-        const materialDoc = await getDoc(doc(db, "materials", materialId));
-        const materialData = materialDoc.data();
-
-        if (!materialData) {
-          console.warn("Material não encontrado:", materialId);
-          return;
-        }
-
-        const templateParams = {
-          to_email: ownerEmail,
-          material_name: materialData.name,
-          user_id: userId,
-        };
-
-        await sendEmail("template_ynk7ot9", templateParams);
-        toast({
-          title: "Notificação Enviada",
-          description: "O responsável pela lista foi notificado.",
-        });
-      } catch (err) {
-        console.error("Falha ao enviar e-mail:", err);
-        toast({
-          variant: "destructive",
-          title: "Erro de Notificação",
-          description: "Não foi possível notificar o responsável.",
-        });
+      } else {
+        console.error("Dono da lista não encontrado para notificação.");
       }
-    },
-    [userId, toast]
-  );
+    } catch (err) {
+      console.error('Falha ao enviar e-mail:', err);
+    }
+  }, [userId]);
+
 
   useEffect(() => {
     if (!userId) {
@@ -111,220 +131,459 @@ export default function MaterialsPage() {
       return;
     }
 
-    const materialsRef = collection(db, "materials");
-    const materialsQuery = query(materialsRef, where("userId", "==", userId));
-    const unsubscribeMaterialsListener = onSnapshot(
-      materialsQuery,
-      (materialsSnapshot) => {
-        const materialsData: Material[] = [];
-        materialsSnapshot.forEach((materialDoc) => {
-          materialsData.push({
-            id: materialDoc.id,
-            ...materialDoc.data(),
-          } as Material);
-        });
-        setMaterials(
-          materialsData.sort((a, b) => a.name.localeCompare(b.name))
-        );
-        setIsLoading(false);
-        setPageLoading(false);
-      },
-      (err) => {
-        console.error("Erro ao obter materiais:", err);
-        setError("Falha ao carregar os materiais.");
-        setPageLoading(false);
-      }
-    );
+    let unsubscribeMaterials: (() => void) | undefined;
+    let unsubscribeShoppingList: (() => void) | undefined;
 
-    const shoppingRef = collection(db, "shoppingList");
-    const shoppingQuery = query(shoppingRef, where("userId", "==", userId));
-    const unsubscribeShoppingListener = onSnapshot(
-      shoppingQuery,
-      (shoppingSnapshot) => {
-        const shoppingData: ShoppingItem[] = [];
-        shoppingSnapshot.forEach((shoppingDoc) => {
-          shoppingData.push({
-            id: shoppingDoc.id,
-            ...shoppingDoc.data(),
-          } as ShoppingItem);
+    const setupListeners = async () => {
+      try {
+        setPageLoading(true);
+
+        const userDocRef = doc(db, "users", userId);
+        const materialsQuery = query(collection(db, "materials"), where("userId", "==", userId));
+        const shoppingListDocRef = doc(db, "shoppingLists", userId);
+
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setPageOwner({ 
+            displayName: userData.displayName || 'Dono(a) da Lista',
+            email: userData.email || ''
+          });
+        } else {
+          setError("Não foi possível encontrar o proprietário da lista.");
+          setPageOwner(null);
+        }
+
+        const materialsSnapshot = await getDocs(materialsQuery);
+        const materialsData: Material[] = [];
+        materialsSnapshot.forEach((doc) => {
+          materialsData.push({ id: doc.id, ...doc.data() } as Material);
         });
-        setShoppingList(
-          shoppingData.sort(
-            (a, b) =>
-              (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)
-          )
+        materialsData.sort((a, b) => a.name.localeCompare(b.name));
+        setMaterials(materialsData);
+
+        const shoppingListDoc = await getDoc(shoppingListDocRef);
+        if (shoppingListDoc.exists()) {
+          const items = shoppingListDoc.data().items || [];
+          items.sort((a: ShoppingListItem, b: ShoppingListItem) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+          setShoppingList(items);
+        } else {
+          await setDoc(shoppingListDocRef, { userId: userId, items: [] });
+        }
+
+        setPageLoading(false);
+
+        unsubscribeMaterials = onSnapshot(
+          materialsQuery,
+          (querySnapshot) => {
+            const materialsData: Material[] = [];
+            querySnapshot.forEach((doc) => {
+              materialsData.push({ id: doc.id, ...doc.data() } as Material);
+            });
+            materialsData.sort((a, b) => a.name.localeCompare(b.name));
+            setMaterials(materialsData);
+          },
+          (e) => {
+            console.error("Error listening to materials: ", e);
+            setError("Falha ao carregar os materiais.");
+          }
         );
-      },
-      (err) => {
-        console.error("Erro ao obter lista de compras:", err);
-        setError("Falha ao carregar a lista de compras.");
+
+        unsubscribeShoppingList = onSnapshot(
+          shoppingListDocRef,
+          (doc) => {
+            if (doc.exists()) {
+              const newList = doc.data().items || [];
+              newList.sort((a: ShoppingListItem, b: ShoppingListItem) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+              setShoppingList(newList);
+            }
+          },
+          (e) => {
+            console.error("Error listening to shopping list: ", e);
+            setError("Falha ao carregar a lista de compras.");
+          }
+        );
+
+      } catch (e) {
+        console.error("Error setting up listeners: ", e);
+        setError("Falha ao carregar a página. Verifique o link e tente novamente.");
+        setPageLoading(false);
       }
-    );
+    };
+
+    setupListeners();
 
     return () => {
-      unsubscribeMaterialsListener();
-      unsubscribeShoppingListener();
+      unsubscribeMaterials?.();
+      unsubscribeShoppingList?.();
     };
   }, [userId]);
-
-  const handleToggleItemInShoppingList = async (materialId: string) => {
+  
+  const updateShoppingListInFirestore = useCallback(async (newList: ShoppingListItem[]) => {
     if (!userId) return;
+    const shoppingListDocRef = doc(db, "shoppingLists", userId);
+    await setDoc(shoppingListDocRef, { items: newList, userId: userId }, { merge: true });
+  }, [userId]);
+  
+  const handleToggleItemInShoppingList = useCallback(async (item: Material) => {
+    const updatedList = [...shoppingList];
+    const existingItemIndex = updatedList.findIndex((i) => i.id === item.id);
+    
+    if (existingItemIndex > -1) {
+        toast({
+            title: "Item já está na lista!",
+            description: `${item.name} já foi adicionado à lista de compras.`,
+        });
 
-    const existingItem = shoppingList.find(
-      (item) => item.materialId === materialId
-    );
+    } else {
+       const newItem: ShoppingListItem = { 
+         id: item.id, 
+         name: item.name,
+         createdAt: Timestamp.now()
+       };
+       updatedList.push(newItem);
+        await updateShoppingListInFirestore(updatedList);
+        
+        await notifyOwnerByEmail(
+            `Novo item na sua lista: ${newItem.name}`,
+            `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras por um visitante.`
+        );
+        
+        toast({
+          title: "Item Adicionado!",
+          description: `${item.name} foi adicionado à lista de compras.`,
+        });
+    }
+  }, [shoppingList, updateShoppingListInFirestore, toast, userId, notifyOwnerByEmail]);
 
-    if (existingItem) {
+  const handleAddCustomItem = useCallback(async () => {
+    if (!customItemName.trim()) {
       toast({
         variant: "destructive",
-        title: "Item já existe",
-        description: "Esse item já está na lista de compras.",
+        title: "Nome inválido",
+        description: "Por favor, digite o nome do item.",
+      });
+      return;
+    }
+    const newItem: ShoppingListItem = {
+      id: `custom-${Date.now()}`,
+      name: customItemName.trim(),
+      createdAt: Timestamp.now()
+    };
+    const updatedList = [...shoppingList, newItem];
+    await updateShoppingListInFirestore(updatedList);
+
+    await notifyOwnerByEmail(
+        `Novo item (avulso) na sua lista: ${newItem.name}`,
+        `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras por um visitante.`
+    );
+
+    toast({
+      title: "Item Adicionado!",
+      description: `${newItem.name} foi adicionado à lista.`,
+    });
+    setCustomItemName("");
+  }, [customItemName, shoppingList, updateShoppingListInFirestore, toast, userId, notifyOwnerByEmail]);
+
+  const handleRemoveItemFromShoppingList = useCallback(async (itemId: string) => {
+    const updatedList = shoppingList.filter((i) => i.id !== itemId);
+    await updateShoppingListInFirestore(updatedList);
+  }, [shoppingList, updateShoppingListInFirestore]);
+  
+  const handleFeedbackSubmit = useCallback(async () => {
+    if (!feedbackType || !feedbackText.trim() || (feedbackType === 'doubt' && !feedbackName.trim())) {
+      toast({
+        variant: "destructive",
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos necessários.",
       });
       return;
     }
 
-    const newItemRef = doc(collection(db, "shoppingList"));
-    const newItem: ShoppingItem = {
-      id: newItemRef.id,
-      materialId,
-      userId,
-      createdAt: serverTimestamp() as unknown as Timestamp,
-    };
-
+    setIsSubmittingFeedback(true);
     try {
-      await setDoc(newItemRef, newItem);
-      toast({
-        title: "Sucesso!",
-        description: "Item adicionado à lista de compras!",
+      await addDoc(collection(db, "feedback"), {
+        listOwnerId: userId,
+        type: feedbackType,
+        text: feedbackText,
+        name: feedbackType === 'doubt' ? feedbackName : null,
+        createdAt: serverTimestamp(),
+        status: "new",
       });
-      await notifyOwnerByEmail(materialId);
-    } catch (err) {
-      console.error("Erro ao adicionar item:", err);
+
+      const subject = feedbackType === 'suggestion' ? 'Nova Sugestão Recebida!' : `Nova Dúvida de ${feedbackName}`;
+      const fromName = feedbackType === 'doubt' ? feedbackName : "Visitante Anônimo";
+      const message = `Você recebeu uma nova mensagem de <strong>${fromName}</strong>.<br><br><strong>Mensagem:</strong><br>${feedbackText}`;
+
+      await notifyOwnerByEmail(subject, message);
+
+      toast({
+        title: "Mensagem Enviada!",
+        description: "Obrigado pelo seu feedback.",
+      });
+
+      setIsFeedbackModalOpen(false);
+      setFeedbackType(null);
+      setFeedbackName("");
+      setFeedbackText("");
+    } catch (error) {
+      console.error("Error sending feedback: ", error);
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: "Erro ao adicionar o item.",
+        title: "Erro ao enviar",
+        description: "Não foi possível enviar sua mensagem. Tente novamente.",
       });
+    } finally {
+      setIsSubmittingFeedback(false);
     }
-  };
+  }, [userId, feedbackType, feedbackText, feedbackName, toast, notifyOwnerByEmail]);
 
-  const handleFeedbackSent = useCallback(
-    async (templateId: string, templateParams: Record<string, unknown>) => {
-      try {
-        const userDocRef = doc(db, "users", userId);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists() && userDoc.data().email) {
-          const ownerEmail = userDoc.data().email;
-          const completeParams = {
-            ...templateParams,
-            to_email: ownerEmail,
-          };
-          await sendEmail(templateId, completeParams);
-          toast({
-            title: "Notificação de Feedback Enviada",
-            description:
-              "O responsável pela lista foi notificado sobre o seu feedback.",
-          });
-        } else {
-          throw new Error("Dono da lista não encontrado ou sem e-mail.");
-        }
-      } catch (error) {
-        console.error("Falha ao enviar e-mail de feedback:", error);
-        toast({
-          variant: "destructive",
-          title: "Erro de Notificação",
-          description:
-            "Não foi possível notificar o responsável sobre o feedback.",
-        });
-      }
-    },
-    [userId, toast]
-  );
+  const shoppingListIds = useMemo(() => new Set(shoppingList.map(item => item.id)), [shoppingList]);
+  
+  const filteredMaterials = useMemo(() => {
+    return materials
+      .filter((material) => !shoppingListIds.has(material.id))
+      .filter((material) =>
+        material.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+  }, [materials, searchQuery, shoppingListIds]);
 
   if (pageLoading) {
-    return <Loader />;
-  }
-
-  if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
-            <div className="mx-auto w-20 h-20">
-              <Logo />
-            </div>
-            <CardTitle className="text-destructive">Ocorreu um Erro</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p>{error}</p>
-          </CardContent>
-        </Card>
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
+  
+  const formatItemDate = (timestamp: Timestamp | null | undefined) => {
+    if (!timestamp) return null;
+    return format(timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+  }
+
+  const renderShoppingList = () => (
+    <>
+      <div className="w-full space-y-2 mb-4">
+        <Input 
+          type="text" 
+          placeholder="Adicionar item avulso"
+          value={customItemName}
+          onChange={(e) => setCustomItemName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
+        />
+        <Button type="submit" onClick={handleAddCustomItem} className="w-full">Adicionar</Button>
+      </div>
+      <Separator className="mb-4" />
+      {shoppingList.length > 0 ? (
+        <div className="space-y-4">
+          <ul className="space-y-3">
+            {shoppingList.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-center justify-between"
+              >
+                <div>
+                  <p className="font-medium">{item.name}</p>
+                   {item.createdAt && (
+                    <p className="text-xs text-muted-foreground">
+                      {formatItemDate(item.createdAt)}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleRemoveItemFromShoppingList(item.id)}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+          <Separator />
+        </div>
+      ) : (
+        <div className="text-center text-muted-foreground py-8">
+          <p>A lista de compras está vazia.</p>
+          <p className="text-sm">
+            Clique nos itens disponíveis para adicionar.
+          </p>
+        </div>
+      )}
+    </>
+  );
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-950 min-h-screen">
-      <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto py-4 px-4 flex items-center gap-4">
-          <div className="w-12 h-12">
-            <Logo />
-          </div>
-          <h1 className="font-headline text-2xl font-bold text-gray-800 dark:text-gray-100">
-            Materiais de Limpeza
-          </h1>
-        </div>
-      </header>
-      <main className="max-w-4xl mx-auto py-8 px-4">
-        {isLoading ? (
-          <Loader />
-        ) : materials.length === 0 ? (
-          <Card className="text-center p-8">
-            <p className="text-muted-foreground">
-              Nenhum material de limpeza foi cadastrado ainda.
-            </p>
-          </Card>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {materials.map((material) => (
-              <Card
-                key={material.id}
-                className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1"
-              >
-                <CardContent className="p-4 flex items-center justify-between gap-4">
-                  <p className="font-medium text-base">{material.name}</p>
-                  <Button
-                    size="icon"
-                    className="rounded-full flex-shrink-0"
-                    onClick={() => handleToggleItemInShoppingList(material.id)}
-                    disabled={shoppingList.some(
-                      (item) => item.materialId === material.id
+     <div className="flex min-h-screen w-full flex-col">
+       <header className="sticky top-0 z-30 flex flex-col gap-4 border-b bg-background/95 p-4 md:px-6">
+            <div className="flex items-center justify-between self-start gap-2 w-full">
+                <div className="flex items-center gap-2">
+                    <div className="h-8 w-8">
+                        <Logo />
+                    </div>
+                    <span className="font-headline text-xl font-semibold">Lista de Limpeza Fácil</span>
+                </div>
+                <div className="md:hidden">
+                    {/* Placeholder for potential mobile-only actions */}
+                </div>
+            </div>
+            <Dialog open={isFeedbackModalOpen} onOpenChange={(isOpen) => {
+                setIsFeedbackModalOpen(isOpen);
+                if (!isOpen) {
+                  setFeedbackType(null);
+                  setFeedbackName("");
+                  setFeedbackText("");
+                }
+            }}>
+                <DialogTrigger asChild>
+                    <Button className="w-full">
+                        <MessageSquarePlus className="mr-2 h-4 w-4" />
+                        Sugestões ou Dúvidas
+                    </Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Deixe sua mensagem</DialogTitle>
+                        <DialogDescription>
+                            Sua opinião é importante! Selecione o tipo de mensagem que deseja enviar.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {!feedbackType ? (
+                        <div className="flex justify-center gap-4 py-8">
+                            <Button onClick={() => setFeedbackType('suggestion')} size="lg">Sugestão</Button>
+                            <Button onClick={() => setFeedbackType('doubt')} size="lg" variant="secondary">Dúvida</Button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4 py-4">
+                            <h3 className="font-medium text-lg text-center">{feedbackType === 'suggestion' ? 'Enviar Sugestão' : 'Tirar Dúvida'}</h3>
+                            {feedbackType === 'doubt' && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">Seu Nome</Label>
+                                    <Input 
+                                        id="name" 
+                                        placeholder="Digite seu nome"
+                                        value={feedbackName}
+                                        onChange={(e) => setFeedbackName(e.target.value)}
+                                    />
+                                </div>
+                            )}
+                             <div className="space-y-2">
+                                <Label htmlFor="message">{feedbackType === 'suggestion' ? 'Sugestão' : 'Dúvida'}</Label>
+                                <Textarea 
+                                    id="message" 
+                                    placeholder={`Digite sua ${feedbackType === 'suggestion' ? 'sugestão' : 'dúvida'} aqui...`}
+                                    value={feedbackText}
+                                    onChange={(e) => setFeedbackText(e.target.value)} 
+                                />
+                            </div>
+                        </div>
                     )}
-                  >
-                    <PlusCircle />
-                    <span className="sr-only">Adicionar à lista</span>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <DialogFooter>
+                         {feedbackType && (
+                             <>
+                                <Button variant="ghost" onClick={() => setFeedbackType(null)}>Voltar</Button>
+                                <Button onClick={handleFeedbackSubmit} disabled={isSubmittingFeedback}>
+                                    {isSubmittingFeedback && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Enviar
+                                </Button>
+                             </>
+                         )}
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </header>
+       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-24">
+        {error ? (
+             <div className="text-center text-destructive py-16">{error}</div>
+        ) : (
+            <div className="grid gap-4 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                     <div className="flex items-center justify-between mb-6 gap-2">
+                        <h1 className="font-headline text-3xl font-bold tracking-tight">
+                            Itens Disponíveis
+                        </h1>
+                    </div>
+                    <div className="relative mb-6">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <Input 
+                            type="text"
+                            placeholder="Pesquisar item..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10"
+                        />
+                    </div>
+                     <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+                        {filteredMaterials.map((material) => {
+                            const isInList = shoppingListIds.has(material.id);
+                            return (
+                                <Card
+                                key={material.id}
+                                className="flex flex-col overflow-hidden transition-shadow hover:shadow-lg group cursor-pointer"
+                                onClick={() => handleToggleItemInShoppingList(material)}
+                                >
+                                    <CardHeader className="flex-row items-center justify-between p-4">
+                                        <CardTitle className="font-headline text-base">
+                                        {material.name}
+                                        </CardTitle>
+                                        <div className="flex justify-end gap-1">
+                                            {isInList ? (
+                                                <CheckIcon className="h-5 w-5 text-primary" />
+                                            ) : (
+                                                <PlusIcon className="h-5 w-5 text-muted-foreground" />
+                                            )}
+                                        </div>
+                                    </CardHeader>
+                                </Card>
+                            );
+                        })}
+                    </div>
+                </div>
+                 <div className="hidden lg:block lg:col-span-1">
+                    <Card className="sticky top-24">
+                      <CardHeader>
+                          <CardTitle className="font-headline text-2xl">
+                            Lista de Compras
+                          </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {renderShoppingList()}
+                      </CardContent>
+                    </Card>
+                </div>
+            </div>
         )}
-
-        <div className="mt-12 text-center">
-          <Button onClick={() => setFeedbackOpen(true)} size="lg">
-            <MessageSquare className="mr-2" />
-            Enviar Dúvida ou Sugestão
-          </Button>
+       </main>
+       
+        {/* Mobile Sheet and FAB */}
+        <div className="lg:hidden">
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                <SheetTrigger asChild>
+                     <Button className="fixed bottom-6 right-6 z-40 h-16 w-16 rounded-full shadow-lg">
+                        <ShoppingCart className="h-6 w-6" />
+                        {shoppingList.length > 0 && (
+                            <Badge variant="destructive" className="absolute -top-2 -right-2 h-6 w-6 justify-center rounded-full">
+                                {shoppingList.length}
+                            </Badge>
+                        )}
+                        <span className="sr-only">Abrir lista de compras</span>
+                    </Button>
+                </SheetTrigger>
+                <SheetContent side="bottom" className="h-[90%] flex flex-col p-0">
+                    <SheetHeader className="p-6 pb-0">
+                        <SheetTitle className="font-headline text-2xl">Lista de Compras</SheetTitle>
+                    </SheetHeader>
+                    <div className="flex-1 overflow-y-auto py-4 px-4">
+                        {renderShoppingList()}
+                    </div>
+                    <SheetFooter className="p-6 pt-0">
+                        <Button onClick={() => setIsSheetOpen(false)} className="w-full">Fechar</Button>
+                    </SheetFooter>
+                </SheetContent>
+            </Sheet>
         </div>
-
-        <FeedbackModal
-          open={feedbackOpen}
-          onClose={() => setFeedbackOpen(false)}
-          userId={userId}
-          onFeedbackSent={handleFeedbackSent}
-        />
-      </main>
-    </div>
+     </div>
   );
 }
+
+    

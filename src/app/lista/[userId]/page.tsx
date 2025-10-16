@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import { useState, useEffect, useCallback } from "react";
+import { useParams } from "next/navigation";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import {
   collection,
   query,
@@ -14,16 +14,16 @@ import {
   setDoc,
   serverTimestamp,
   Timestamp,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { sendEmail } from '@/lib/email';
-import FeedbackModal from '@/components/FeedbackModal';
-import Loader from '@/components/Loader';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PlusCircle, Send } from 'lucide-react';
-import { Logo } from '@/components/icons/logo';
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { sendEmail } from "@/lib/email";
+import FeedbackModal from "@/components/FeedbackModal";
+import Loader from "@/components/Loader";
+import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlusCircle, MessageSquare } from "lucide-react";
+import { Logo } from "@/components/icons/logo";
 
 interface Material {
   id: string;
@@ -38,10 +38,10 @@ interface ShoppingItem {
   createdAt: Timestamp;
 }
 
-export default function PublicListPage() {
-  const params = useParams<{ userId: string }>();
+export default function MaterialsPage() {
+  const params = useParams();
+  const userId = params.userId as string;
   const { toast } = useToast();
-  const userId = params.userId;
 
   const [materials, setMaterials] = useState<Material[]>([]);
   const [shoppingList, setShoppingList] = useState<ShoppingItem[]>([]);
@@ -49,77 +49,70 @@ export default function PublicListPage() {
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [pageOwner, setPageOwner] = useState<{
-    displayName: string;
-    email: string;
-  } | null>(null);
 
-  const notifyOwnerByEmail = useCallback(async (templateId: string, templateParams: Record<string, unknown>) => {
-    if (!userId) return;
+  const formatItemDate = (timestamp?: Timestamp | null) => {
+    if (!timestamp || typeof timestamp.toDate !== "function") return null;
+    return format(timestamp.toDate(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
+  };
 
-    try {
-      const userDocRef = doc(db, 'users', userId);
-      const userDoc = await getDoc(userDocRef);
+  const notifyOwnerByEmail = useCallback(
+    async (materialId: string) => {
+      if (!userId) return;
 
-      if (userDoc.exists()) {
-        const ownerData = userDoc.data();
-        if (ownerData.email) {
-          await sendEmail(templateId, {
-            ...templateParams,
-            to_email: ownerData.email,
-            to_name: ownerData.displayName || 'Usuário',
-          });
-          toast({
-            title: 'Notificação Enviada!',
-            description: 'O responsável pela lista foi notificado.',
-          });
-        } else {
-          console.error('E-mail do dono da lista não encontrado.');
-          toast({
-            variant: 'destructive',
-            title: 'Erro de Notificação',
-            description: 'Não foi possível encontrar o e-mail do responsável.',
-          });
+      try {
+        const userDocRef = doc(db, "users", userId);
+        const userDoc = await getDoc(userDocRef);
+
+        if (!userDoc.exists()) {
+          throw new Error("Usuário (dono da lista) não encontrado.");
         }
-      } else {
-        console.error('Dono da lista não encontrado:', userId);
-      }
-    } catch (err) {
-      console.error('Falha ao buscar usuário ou enviar e-mail:', err);
-      toast({
-        variant: 'destructive',
-        title: 'Erro de Notificação',
-        description: 'Falha ao notificar o responsável pela lista.',
-      });
-    }
-  }, [userId, toast]);
+        const ownerData = userDoc.data();
+        const ownerEmail = ownerData.email;
 
+        if (!ownerEmail) {
+          throw new Error("O dono da lista não possui um e-mail configurado.");
+        }
+
+        const materialDoc = await getDoc(doc(db, "materials", materialId));
+        const materialData = materialDoc.data();
+
+        if (!materialData) {
+          console.warn("Material não encontrado:", materialId);
+          return;
+        }
+
+        const templateParams = {
+          to_email: ownerEmail,
+          material_name: materialData.name,
+          user_id: userId,
+        };
+
+        await sendEmail("template_ynk7ot9", templateParams);
+        toast({
+          title: "Notificação Enviada",
+          description: "O responsável pela lista foi notificado.",
+        });
+      } catch (err) {
+        console.error("Falha ao enviar e-mail:", err);
+        toast({
+          variant: "destructive",
+          title: "Erro de Notificação",
+          description: "Não foi possível notificar o responsável.",
+        });
+      }
+    },
+    [userId, toast]
+  );
 
   useEffect(() => {
     if (!userId) {
-      setError('ID de usuário inválido.');
+      setError("ID de usuário inválido.");
       setPageLoading(false);
       return;
     }
 
-    const userDocRef = doc(db, 'users', userId as string);
-    getDoc(userDocRef)
-      .then((docSnap) => {
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
-          setPageOwner({
-            displayName: userData.displayName || 'Usuário',
-            email: userData.email || '',
-          });
-        } else {
-          setError('Usuário não encontrado.');
-        }
-      })
-      .catch(() => setError('Erro ao buscar informações do usuário.'))
-      .finally(() => setPageLoading(false));
-
-    const materialsRef = collection(db, 'materials');
-    const materialsQuery = query(materialsRef, where('userId', '==', userId));
+    const materialsRef = collection(db, "materials");
+    const materialsQuery = query(materialsRef, where("userId", "==", userId));
     const unsubscribeMaterialsListener = onSnapshot(
       materialsQuery,
       (materialsSnapshot) => {
@@ -134,25 +127,37 @@ export default function PublicListPage() {
           materialsData.sort((a, b) => a.name.localeCompare(b.name))
         );
         setIsLoading(false);
+        setPageLoading(false);
       },
       (err) => {
-        console.error('Erro ao obter materiais:', err);
-        setError('Falha ao carregar os materiais.');
-        setIsLoading(false);
+        console.error("Erro ao obter materiais:", err);
+        setError("Falha ao carregar os materiais.");
+        setPageLoading(false);
       }
     );
 
-    const shoppingListDocRef = doc(db, 'shoppingLists', userId as string);
+    const shoppingRef = collection(db, "shoppingList");
+    const shoppingQuery = query(shoppingRef, where("userId", "==", userId));
     const unsubscribeShoppingListener = onSnapshot(
-      shoppingListDocRef,
-      (doc) => {
-        if (doc.exists()) {
-          setShoppingList(doc.data().items || []);
-        }
+      shoppingQuery,
+      (shoppingSnapshot) => {
+        const shoppingData: ShoppingItem[] = [];
+        shoppingSnapshot.forEach((shoppingDoc) => {
+          shoppingData.push({
+            id: shoppingDoc.id,
+            ...shoppingDoc.data(),
+          } as ShoppingItem);
+        });
+        setShoppingList(
+          shoppingData.sort(
+            (a, b) =>
+              (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0)
+          )
+        );
       },
       (err) => {
-        console.error('Erro ao obter lista de compras:', err);
-        setError('Falha ao carregar a lista de compras.');
+        console.error("Erro ao obter lista de compras:", err);
+        setError("Falha ao carregar a lista de compras.");
       }
     );
 
@@ -162,54 +167,80 @@ export default function PublicListPage() {
     };
   }, [userId]);
 
-  const handleToggleItemInShoppingList = async (material: Material) => {
+  const handleToggleItemInShoppingList = async (materialId: string) => {
     if (!userId) return;
 
-    const newList = [...shoppingList];
-    const existingItemIndex = newList.findIndex(
-      (item) => item.materialId === material.id
+    const existingItem = shoppingList.find(
+      (item) => item.materialId === materialId
     );
 
-    if (existingItemIndex > -1) {
+    if (existingItem) {
       toast({
-        variant: 'default',
-        title: 'Item já existe',
-        description: 'Esse item já está na lista de compras.',
+        variant: "destructive",
+        title: "Item já existe",
+        description: "Esse item já está na lista de compras.",
       });
       return;
     }
 
+    const newItemRef = doc(collection(db, "shoppingList"));
     const newItem: ShoppingItem = {
-      id: doc(collection(db, 'shoppingList')).id, // Generate a new ID
-      materialId: material.id,
+      id: newItemRef.id,
+      materialId,
       userId,
-      createdAt: serverTimestamp() as Timestamp,
+      createdAt: serverTimestamp() as unknown as Timestamp,
     };
-    newList.push(newItem);
-
-    const shoppingListDocRef = doc(db, 'shoppingLists', userId);
 
     try {
-      // We use setDoc with merge to create the document if it doesn't exist.
-      await setDoc(shoppingListDocRef, { items: newList }, { merge: true });
-
+      await setDoc(newItemRef, newItem);
       toast({
-        title: 'Item Adicionado!',
-        description: `${material.name} foi adicionado à lista.`,
+        title: "Sucesso!",
+        description: "Item adicionado à lista de compras!",
       });
-
-      await notifyOwnerByEmail('template_ynk7ot9', {
-        material_name: material.name,
-      });
+      await notifyOwnerByEmail(materialId);
     } catch (err) {
-      console.error('Erro ao adicionar item:', err);
+      console.error("Erro ao adicionar item:", err);
       toast({
-        variant: 'destructive',
-        title: 'Erro',
-        description: 'Erro ao adicionar o item.',
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao adicionar o item.",
       });
     }
   };
+
+  const handleFeedbackSent = useCallback(
+    async (templateId: string, templateParams: Record<string, unknown>) => {
+      try {
+        const userDocRef = doc(db, "users", userId);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists() && userDoc.data().email) {
+          const ownerEmail = userDoc.data().email;
+          const completeParams = {
+            ...templateParams,
+            to_email: ownerEmail,
+          };
+          await sendEmail(templateId, completeParams);
+          toast({
+            title: "Notificação de Feedback Enviada",
+            description:
+              "O responsável pela lista foi notificado sobre o seu feedback.",
+          });
+        } else {
+          throw new Error("Dono da lista não encontrado ou sem e-mail.");
+        }
+      } catch (error) {
+        console.error("Falha ao enviar e-mail de feedback:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro de Notificação",
+          description:
+            "Não foi possível notificar o responsável sobre o feedback.",
+        });
+      }
+    },
+    [userId, toast]
+  );
 
   if (pageLoading) {
     return <Loader />;
@@ -217,90 +248,72 @@ export default function PublicListPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4 text-center">
-        <h2 className="text-2xl font-bold text-destructive mb-4">
-          Ocorreu um Erro
-        </h2>
-        <p className="text-muted-foreground">{error}</p>
-        <Button onClick={() => (window.location.href = '/')} className="mt-6">
-          Voltar para a página inicial
-        </Button>
+      <div className="flex min-h-screen items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+        <Card className="w-full max-w-md text-center">
+          <CardHeader>
+            <div className="mx-auto w-20 h-20">
+              <Logo />
+            </div>
+            <CardTitle className="text-destructive">Ocorreu um Erro</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>{error}</p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-4xl">
-        <header className="text-center mb-10">
-          <div className="inline-block mx-auto h-24 w-24">
+    <div className="bg-gray-50 dark:bg-gray-950 min-h-screen">
+      <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto py-4 px-4 flex items-center gap-4">
+          <div className="w-12 h-12">
             <Logo />
           </div>
-          <h1 className="font-headline text-4xl font-bold mt-4 text-gray-800 dark:text-gray-100">
-            Lista de Limpeza de {pageOwner?.displayName}
+          <h1 className="font-headline text-2xl font-bold text-gray-800 dark:text-gray-100">
+            Materiais de Limpeza
           </h1>
-          <p className="text-lg text-muted-foreground mt-2">
-            Clique em um item para adicioná-lo à lista de compras.
-          </p>
-        </header>
-
+        </div>
+      </header>
+      <main className="max-w-4xl mx-auto py-8 px-4">
         {isLoading ? (
           <Loader />
         ) : materials.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="text-xl text-muted-foreground">
-              Nenhum material de limpeza cadastrado no momento.
+          <Card className="text-center p-8">
+            <p className="text-muted-foreground">
+              Nenhum material de limpeza foi cadastrado ainda.
             </p>
-          </div>
+          </Card>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {materials.map((material) => {
-              const isOnList = shoppingList.some(
-                (item) => item.materialId === material.id
-              );
-              return (
-                <Card
-                  key={material.id}
-                  onClick={() =>
-                    !isOnList && handleToggleItemInShoppingList(material)
-                  }
-                  className={`transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl ${
-                    isOnList
-                      ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed'
-                      : 'cursor-pointer bg-card'
-                  }`}
-                >
-                  <CardHeader className="flex flex-col items-center justify-center text-center p-6">
-                    <CardTitle className="font-semibold text-lg">
-                      {material.name}
-                    </CardTitle>
-                    {isOnList && (
-                      <span className="text-xs text-green-600 dark:text-green-400 font-medium mt-2">
-                        Já está na lista
-                      </span>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {materials.map((material) => (
+              <Card
+                key={material.id}
+                className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1"
+              >
+                <CardContent className="p-4 flex items-center justify-between gap-4">
+                  <p className="font-medium text-base">{material.name}</p>
+                  <Button
+                    size="icon"
+                    className="rounded-full flex-shrink-0"
+                    onClick={() => handleToggleItemInShoppingList(material.id)}
+                    disabled={shoppingList.some(
+                      (item) => item.materialId === material.id
                     )}
-                  </CardHeader>
-                  {!isOnList && (
-                    <CardContent className="p-0">
-                      <div className="flex items-center justify-center w-full bg-accent/30 text-accent-foreground p-3 text-sm font-medium">
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Adicionar à lista
-                      </div>
-                    </CardContent>
-                  )}
-                </Card>
-              );
-            })}
+                  >
+                    <PlusCircle />
+                    <span className="sr-only">Adicionar à lista</span>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
 
-        <div className="fixed bottom-6 right-6">
-          <Button
-            onClick={() => setFeedbackOpen(true)}
-            size="lg"
-            className="rounded-full shadow-lg"
-          >
-            <Send className="mr-2 h-5 w-5" />
+        <div className="mt-12 text-center">
+          <Button onClick={() => setFeedbackOpen(true)} size="lg">
+            <MessageSquare className="mr-2" />
             Enviar Dúvida ou Sugestão
           </Button>
         </div>
@@ -309,9 +322,9 @@ export default function PublicListPage() {
           open={feedbackOpen}
           onClose={() => setFeedbackOpen(false)}
           userId={userId}
-          onFeedbackSent={notifyOwnerByEmail}
+          onFeedbackSent={handleFeedbackSent}
         />
-      </div>
+      </main>
     </div>
   );
 }

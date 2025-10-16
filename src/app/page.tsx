@@ -467,7 +467,7 @@ export default function DashboardPage() {
                           <CardTitle className="font-headline text-base font-semibold leading-snug">
                           {material.name}
                           </CardTitle>
-                          <div className="flex flex-col gap-1 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                          <div className="flex flex-col gap-1 transition-opacity">
                               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => {e.stopPropagation(); handleOpenForm(material)}}>
                                   <Edit className="h-4 w-4" />
                               </Button>

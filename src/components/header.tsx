@@ -27,7 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/icons/logo";
 import { LogOut, User, Edit, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { doc, updateDoc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { updateProfile } from "firebase/auth";
 
@@ -38,7 +38,6 @@ export default function Header() {
 
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [displayName, setDisplayName] = useState("");
-  const [whatsappNumber, setWhatsappNumber] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   const [currentUserData, setCurrentUserData] = useState({
@@ -57,8 +56,6 @@ export default function Header() {
             photoURL: user.photoURL || "",
           });
           setDisplayName(userData.displayName || "");
-          const rawNumber = userData.whatsapp || "";
-          setWhatsappNumber(formatWhatsApp(rawNumber));
         }
       });
       return () => unsubscribe();
@@ -74,12 +71,10 @@ export default function Header() {
     if (!user) return;
     setIsSaving(true);
     try {
-      const digitsOnly = whatsappNumber.replace(/\D/g, "");
       const userDocRef = doc(db, "users", user.uid);
       
       await updateDoc(userDocRef, {
         displayName: displayName,
-        whatsapp: digitsOnly,
       });
 
       if (user.displayName !== displayName) {
@@ -101,23 +96,6 @@ export default function Header() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const formatWhatsApp = (value: string) => {
-    if (!value) return "";
-    const digitsOnly = value.replace(/\D/g, "");
-    
-    if (digitsOnly.length <= 2) {
-      return `(${digitsOnly}`;
-    }
-    if (digitsOnly.length <= 7) {
-      return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2)}`;
-    }
-    return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 7)}-${digitsOnly.slice(7, 11)}`;
-  }
-
-  const handleWhatsAppInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setWhatsappNumber(formatWhatsApp(e.target.value));
   };
 
   const getInitials = (name: string) => {
@@ -174,7 +152,7 @@ export default function Header() {
           <DialogHeader>
             <DialogTitle>Editar Perfil</DialogTitle>
             <DialogDescription>
-              Atualize seu nome de exibição e número do WhatsApp.
+              Atualize seu nome de exibição.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -187,19 +165,6 @@ export default function Header() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="whatsapp" className="text-right">
-                WhatsApp
-              </Label>
-              <Input
-                id="whatsapp"
-                value={whatsappNumber}
-                onChange={handleWhatsAppInputChange}
-                placeholder="(XX) XXXXX-XXXX"
-                className="col-span-3"
-                maxLength={15}
               />
             </div>
           </div>
@@ -215,5 +180,3 @@ export default function Header() {
     </>
   );
 }
-
-    

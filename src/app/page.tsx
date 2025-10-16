@@ -92,7 +92,6 @@ export default function DashboardPage() {
   const [materialsLoading, setMaterialsLoading] = useState(true);
   const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [whatsAppNumber, setWhatsAppNumber] = useState("");
 
   const isInitialShoppingListLoad = useRef(true);
 
@@ -151,7 +150,7 @@ export default function DashboardPage() {
         unsubscribeFeedback();
       }
     }
-  }, [user]);
+  }, [user, toast]);
 
  useEffect(() => {
     if (!user) return;

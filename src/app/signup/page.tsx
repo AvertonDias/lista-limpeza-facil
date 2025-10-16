@@ -30,7 +30,6 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
   const { user, signup, loading } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -43,23 +42,6 @@ export default function SignupPage() {
       router.push("/");
     }
   }, [user, router]);
-
-  const formatWhatsApp = (value: string) => {
-    if (!value) return "";
-    const digitsOnly = value.replace(/\D/g, "");
-    
-    if (digitsOnly.length <= 2) {
-      return `(${digitsOnly}`;
-    }
-    if (digitsOnly.length <= 7) {
-      return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2)}`;
-    }
-    return `(${digitsOnly.slice(0, 2)}) ${digitsOnly.slice(2, 7)}-${digitsOnly.slice(7, 11)}`;
-  }
-
-  const handleWhatsAppInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setWhatsapp(formatWhatsApp(e.target.value));
-  };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,14 +74,12 @@ export default function SignupPage() {
 
         // Create user document in Firestore
         const userDocRef = doc(db, "users", newUser.uid);
-        const digitsOnly = whatsapp.replace(/\D/g, "");
 
         await setDoc(userDocRef, {
           uid: newUser.uid,
           email: newUser.email,
           displayName: displayName,
           createdAt: new Date(),
-          whatsapp: digitsOnly,
         }, { merge: true });
       }
 
@@ -168,18 +148,6 @@ export default function SignupPage() {
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="whatsapp">WhatsApp</Label>
-              <Input
-                id="whatsapp"
-                value={whatsapp}
-                onChange={handleWhatsAppInputChange}
-                placeholder="(XX) XXXXX-XXXX"
-                className="col-span-3"
-                maxLength={15}
                 required
               />
             </div>

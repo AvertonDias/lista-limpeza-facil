@@ -233,7 +233,7 @@ export default function PublicListPage() {
         await updateShoppingListInFirestore(updatedList);
         
         await notifyOwnerByEmail(
-            `[Lista de Limpeza Fácil] Novo Item Adicionado`,
+            `Lista de Limpeza Fácil: Novo Item Adicionado`,
             `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras por um visitante.`
         );
         
@@ -262,7 +262,7 @@ export default function PublicListPage() {
     await updateShoppingListInFirestore(updatedList);
 
     await notifyOwnerByEmail(
-        `[Lista de Limpeza Fácil] Novo Item Avulso Adicionado`,
+        `Lista de Limpeza Fácil: Novo Item Avulso Adicionado`,
         `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras por um visitante.`
     );
 
@@ -578,6 +578,7 @@ export default function PublicListPage() {
 }
 
     
+
 
 
 

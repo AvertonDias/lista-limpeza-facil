@@ -236,7 +236,7 @@ export default function PublicListPage() {
         await notifyOwnerByEmail(
             `Lista de Limpeza Fácil: Novo Item Adicionado`,
             `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras.`,
-            `Notificação da Lista`
+            `Lista de Limpeza Fácil App`
         );
         
         toast({
@@ -266,7 +266,7 @@ export default function PublicListPage() {
     await notifyOwnerByEmail(
         `Lista de Limpeza Fácil: Novo Item Avulso Adicionado`,
         `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras.`,
-        `Notificação da Lista`
+        `Lista de Limpeza Fácil App`
     );
 
     toast({
@@ -313,7 +313,7 @@ export default function PublicListPage() {
         message = `Você recebeu uma nova mensagem de <strong>${feedbackName}</strong>.<br><br><strong>Mensagem:</strong><br>${feedbackText}`;
       }
 
-      await notifyOwnerByEmail(subject, message, 'Feedback da Lista');
+      await notifyOwnerByEmail(subject, message, 'Lista de Limpeza Fácil App');
 
       toast({
         title: "Mensagem Enviada!",

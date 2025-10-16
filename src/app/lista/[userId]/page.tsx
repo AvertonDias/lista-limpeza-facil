@@ -302,8 +302,13 @@ export default function PublicListPage() {
       const subject = feedbackType === 'suggestion' 
           ? 'Lista de Limpeza Fácil: Nova Sugestão Recebida' 
           : 'Lista de Limpeza Fácil: Nova Dúvida Recebida';
-      const fromName = feedbackType === 'doubt' ? feedbackName : "Visitante Anônimo";
-      const message = `Você recebeu uma nova mensagem de <strong>${fromName}</strong>.<br><br><strong>Mensagem:</strong><br>${feedbackText}`;
+      
+      let message;
+      if (feedbackType === 'suggestion') {
+        message = `Você recebeu uma nova sugestão.<br><br><strong>Mensagem:</strong><br>${feedbackText}`;
+      } else {
+        message = `Você recebeu uma nova mensagem de <strong>${feedbackName}</strong>.<br><br><strong>Mensagem:</strong><br>${feedbackText}`;
+      }
 
       await notifyOwnerByEmail(subject, message);
 
@@ -585,3 +590,6 @@ export default function PublicListPage() {
 
 
 
+
+
+    

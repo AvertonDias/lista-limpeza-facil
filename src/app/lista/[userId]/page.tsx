@@ -501,7 +501,7 @@ export default function PublicListPage() {
                         />
                     </div>
                     <div className="w-full space-y-2 mb-6">
-                      <Label>Adicionar item avulso</Label>
+                      <Label>Adicionar um item que não está na lista</Label>
                       <div className="flex gap-2">
                         <Input 
                           type="text" 
@@ -598,3 +598,4 @@ export default function PublicListPage() {
     
 
     
+

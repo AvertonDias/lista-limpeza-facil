@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
@@ -17,6 +17,7 @@ import {
   Timestamp,
   getDoc,
   arrayUnion,
+  orderBy,
 } from "firebase/firestore";
 import type { Material, ShoppingListItem, Feedback } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -103,6 +104,8 @@ export default function DashboardPage() {
     }
   }, [user, loading, router]);
   
+  const stableSetFeedback = useCallback(setFeedback, []);
+
   useEffect(() => {
     if (user) {
       // Init EmailJS
@@ -136,10 +139,14 @@ export default function DashboardPage() {
       
       // Listen for feedback
       setFeedbackLoading(true);
-      const feedbackQuery = query(collection(db, "feedback"), where("listOwnerId", "==", user.uid));
+      const feedbackQuery = query(
+        collection(db, "feedback"), 
+        where("listOwnerId", "==", user.uid),
+        orderBy("createdAt", "desc")
+      );
       const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
         const allFeedbacks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
-        setFeedback(allFeedbacks);
+        stableSetFeedback(allFeedbacks);
         setFeedbackLoading(false);
       }, (error) => {
         console.error("Error fetching feedback: ", error);
@@ -152,7 +159,7 @@ export default function DashboardPage() {
         unsubscribeFeedback();
       }
     }
-  }, [user, toast]);
+  }, [user, toast, stableSetFeedback]);
 
  useEffect(() => {
     if (!user) return;
@@ -385,8 +392,8 @@ export default function DashboardPage() {
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <Header />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-24">
-        <div className="grid gap-8 lg:grid-cols-3">
-          <div className="lg:col-span-2 space-y-8">
+        <div className="grid gap-8 xl:grid-cols-5">
+          <div className="space-y-8 xl:col-span-3">
            <div>
               <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
                 <h1 className="font-headline text-3xl font-bold tracking-tight">
@@ -456,42 +463,42 @@ export default function DashboardPage() {
                       <Loader2 className="h-12 w-12 animate-spin text-primary" />
                   </div>
               ) : filteredMaterials.length > 0 ? (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
                   {filteredMaterials.map((material) => (
                       <Card
                       key={material.id}
                       className="group/item flex flex-col overflow-hidden transition-shadow hover:shadow-lg cursor-pointer bg-background"
                       onClick={() => handleAddItemToShoppingList(material)}
                       >
-                      <CardHeader className="flex-row items-start justify-between p-4">
+                       <CardHeader className="flex-row items-start justify-between p-4">
                           <CardTitle className="font-headline text-base font-semibold leading-snug">
-                          {material.name}
+                            {material.name}
                           </CardTitle>
-                           <div className="flex flex-col gap-1 transition-opacity">
-                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => {e.stopPropagation(); handleOpenForm(material)}}>
-                                  <Edit className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => {e.stopPropagation()}}>
-                                      <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            Esta ação não pode ser desfeita. Isso removerá o item da sua lista de materiais e também da lista de compras.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDeleteMaterial(material.id)}>Continuar</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+                          <div className="flex flex-col gap-1 transition-opacity">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleOpenForm(material); }}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); }}>
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita. Isso removerá o item da sua lista de materiais e também da lista de compras.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDeleteMaterial(material.id)}>Continuar</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
-                      </CardHeader>
+                        </CardHeader>
                       </Card>
                   ))}
                   </div>
@@ -562,7 +569,7 @@ export default function DashboardPage() {
             </div>
 
           </div>
-          <div className="hidden lg:block lg:col-span-1">
+          <div className="hidden xl:block xl:col-span-2">
             <Card className="sticky top-24 bg-background">
               <CardHeader>
                 <CardTitle className="font-headline text-2xl">
@@ -606,3 +613,5 @@ export default function DashboardPage() {
         </div>
     </div>);
 }
+
+    

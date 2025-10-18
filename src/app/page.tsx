@@ -104,7 +104,6 @@ export default function DashboardPage() {
     }
   }, [user, loading, router]);
   
-  const stableSetFeedback = useCallback(setFeedback, []);
 
   useEffect(() => {
     if (user) {
@@ -141,12 +140,13 @@ export default function DashboardPage() {
       setFeedbackLoading(true);
       const feedbackQuery = query(
         collection(db, "feedback"), 
-        where("listOwnerId", "==", user.uid),
-        orderBy("createdAt", "desc")
+        where("listOwnerId", "==", user.uid)
       );
       const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
         const allFeedbacks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
-        stableSetFeedback(allFeedbacks);
+        // Sort feedback by date on the client-side
+        allFeedbacks.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+        setFeedback(allFeedbacks);
         setFeedbackLoading(false);
       }, (error) => {
         console.error("Error fetching feedback: ", error);
@@ -159,7 +159,7 @@ export default function DashboardPage() {
         unsubscribeFeedback();
       }
     }
-  }, [user, toast, stableSetFeedback]);
+  }, [user, toast]);
 
  useEffect(() => {
     if (!user) return;
@@ -392,8 +392,8 @@ export default function DashboardPage() {
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
       <Header />
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8 pb-24">
-        <div className="grid gap-8 xl:grid-cols-5">
-          <div className="space-y-8 xl:col-span-3">
+        <div className="grid gap-8 lg:grid-cols-5">
+          <div className="space-y-8 lg:col-span-3">
            <div>
               <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
                 <h1 className="font-headline text-3xl font-bold tracking-tight">
@@ -463,7 +463,7 @@ export default function DashboardPage() {
                       <Loader2 className="h-12 w-12 animate-spin text-primary" />
                   </div>
               ) : filteredMaterials.length > 0 ? (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {filteredMaterials.map((material) => (
                       <Card
                       key={material.id}
@@ -474,7 +474,7 @@ export default function DashboardPage() {
                           <CardTitle className="font-headline text-base font-semibold leading-snug">
                             {material.name}
                           </CardTitle>
-                          <div className="flex flex-col gap-1 transition-opacity">
+                          <div className="flex flex-col gap-1 opacity-0 transition-opacity group-hover/item:opacity-100">
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleOpenForm(material); }}>
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -569,7 +569,7 @@ export default function DashboardPage() {
             </div>
 
           </div>
-          <div className="hidden xl:block xl:col-span-2">
+          <div className="hidden lg:block lg:col-span-2">
             <Card className="sticky top-24 bg-background">
               <CardHeader>
                 <CardTitle className="font-headline text-2xl">

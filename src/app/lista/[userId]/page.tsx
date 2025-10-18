@@ -234,7 +234,7 @@ export default function PublicListPage() {
         await updateShoppingListInFirestore(updatedList);
         
         await notifyOwnerByEmail(
-            `Lista de Limpeza Fácil: Novo Item Adicionado`,
+            `Novo Item Adicionado`,
             `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras.`,
             `Lista de Limpeza Fácil App`
         );
@@ -264,7 +264,7 @@ export default function PublicListPage() {
     await updateShoppingListInFirestore(updatedList);
 
     await notifyOwnerByEmail(
-        `Lista de Limpeza Fácil: Novo Item Avulso Adicionado`,
+        `Novo Item Avulso Adicionado`,
         `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras.`,
         `Lista de Limpeza Fácil App`
     );
@@ -303,8 +303,8 @@ export default function PublicListPage() {
       });
 
       const subject = feedbackType === 'suggestion' 
-          ? 'Lista de Limpeza Fácil: Nova Sugestão Recebida' 
-          : 'Lista de Limpeza Fácil: Nova Dúvida Recebida';
+          ? 'Nova Sugestão Recebida' 
+          : 'Nova Dúvida Recebida';
       
       let message;
       if (feedbackType === 'suggestion') {
@@ -598,4 +598,5 @@ export default function PublicListPage() {
     
 
     
+
 

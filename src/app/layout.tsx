@@ -7,9 +7,10 @@ export const metadata: Metadata = {
   title: "Lista de Limpeza Fácil",
   description: "Gerencie sua lista de compras de limpeza de forma fácil e organizada.",
   icons: {
-    apple: "/images/placeholder-icon.png?v=2",
-    icon: "/images/placeholder-icon.png?v=2",
+    apple: "/images/icon-512x512.png",
+    icon: "/images/icon-512x512.png",
   },
+  manifest: "/manifest.webmanifest",
 };
 
 export const viewport: Viewport = {

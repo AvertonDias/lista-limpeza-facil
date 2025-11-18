@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   title: "Lista de Limpeza Fácil",
   description: "Gerencie sua lista de compras de limpeza de forma fácil e organizada.",
   icons: {
-    apple: "/images/icon-512x512.png",
-    icon: "/images/icon-512x512.png",
+    apple: "/images/placeholder-icon.png",
+    icon: "/images/placeholder-icon.png",
   },
   manifest: "/manifest.webmanifest",
 };

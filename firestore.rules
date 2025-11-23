@@ -10,6 +10,13 @@ service cloud.firestore {
       allow write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // Regra Temporária de Migração: Permite que usuários autenticados leiam 'materials' e escrevam em 'items'.
+    // Isso é necessário para o script de migração de dados.
+    // Depois da migração, esta regra pode ser mais restritiva.
+    match /materials/{materialId} {
+        allow read: if request.auth != null;
+    }
+
     // Coleção 'items'
     // Permite que qualquer pessoa leia (para a lista pública).
     // Apenas o usuário autenticado pode criar, atualizar ou deletar seus próprios itens.

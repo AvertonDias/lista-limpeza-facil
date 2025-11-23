@@ -1,0 +1,15 @@
+
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "br.com.listalimpezafacil.app",
+      "sha256_cert_fingerprints": [
+        "2F:7C:1F:B9:9F:F2:C4:4E:91:67:8B:F3:3A:94:A7:88:51:F2:7A:B4:4D:2F:32:D8:1A:37:A6:6C:54:19:9A:89"
+      ]
+    }
+  }
+]

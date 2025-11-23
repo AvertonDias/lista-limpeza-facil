@@ -27,10 +27,11 @@
   "alphaDependencies": {
     "enabled": false
   },
-"defaultUrl": "https://lista-de-limpeza-facil.vercel.app",
+  "defaultUrl": "https://lista-de-limpeza-facil.vercel.app",
   "delegation": {
     "include": [
       ".well-known/assetlinks.json"
     ]
-  }
+  },
+  "jdkPath": "C:\\Program Files\\Microsoft\\jdk-17.0.14.7-hotspot"
 }

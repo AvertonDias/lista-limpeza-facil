@@ -1,25 +1,37 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /items/{itemId} {
-      allow read: if true;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
-    }
+  
+    // Coleção 'users'
+    // Permite que um usuário leia e atualize seu próprio documento.
+    // A leitura pública é necessária para que a página /lista/[userId] possa exibir o nome do proprietário.
     match /users/{userId} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.uid == userId;
     }
-    match /shoppingLists/{userId} {
-      // Allow anyone to read and update, which enables the public page functionality.
-      allow read, update: if true; 
-      // Only the authenticated owner can create or delete their entire list.
-      allow create, delete: if request.auth != null && request.auth.uid == userId;
+
+    // Coleção 'items'
+    // Permite que qualquer pessoa leia (para a lista pública).
+    // Apenas o usuário autenticado pode criar, atualizar ou deletar seus próprios itens.
+    match /items/{itemId} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
-   match /feedback/{feedbackId} {
- 		 allow create: if true;
- 		 allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.listOwnerId;
+
+    // Coleção 'shoppingLists'
+    // Permite que qualquer pessoa leia e escreva.
+    // Necessário para que visitantes da página pública possam adicionar e remover itens da lista.
+    match /shoppingLists/{listId} {
+      allow read, write: if true;
+    }
+
+    // Coleção 'feedback'
+    // Permite que qualquer pessoa crie um feedback.
+    // Apenas o proprietário da lista (listOwnerId) pode ler ou deletar os feedbacks enviados a ele.
+    match /feedback/{feedbackId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.listOwnerId;
     }
   }
 }

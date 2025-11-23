@@ -1,14 +1,21 @@
-
 [
   {
-    "relation": [
-      "delegate_permission/common.handle_all_urls"
-    ],
+    "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
       "package_name": "br.com.listalimpezafacil.app",
       "sha256_cert_fingerprints": [
-        "2F:7C:1F:B9:9F:F2:C4:4E:91:67:8B:F3:3A:94:A7:88:51:F2:7A:B4:4D:2F:32:D8:1A:37:A6:6C:54:19:9A:89"
+        "1D:4A:2A:0A:4A:A5:72:35:64:25:24:E5:69:4C:A8:84:8F:A1:6A:19:D8:17:5D:F3:33:43:45:51:7A:F2:47:3B"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "br.com.listalimpezafacil.app",
+      "sha256_cert_fingerprints": [
+        "COPIE_E_COLE_A_IMPRESSAO_DIGITAL_SHA_256_DO_GOOGLE_PLAY_CONSOLE_AQUI"
       ]
     }
   }

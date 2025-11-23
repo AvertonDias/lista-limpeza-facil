@@ -7,23 +7,16 @@ service cloud.firestore {
     // A leitura pública é necessária para que a página /lista/[userId] possa exibir o nome do proprietário.
     match /users/{userId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // Regra Temporária de Migração: Permite que usuários autenticados leiam 'materials'.
-    // Isso é necessário para o script de migração de dados.
-    match /materials/{materialId} {
-        allow read: if request.auth != null;
+      allow write: if request.auth.uid == userId;
     }
 
     // Coleção 'items'
     // Permite que qualquer pessoa leia (para a lista pública).
-    // A criação é permitida para usuários autenticados (para a migração).
-    // Apenas o proprietário pode atualizar ou deletar seus próprios itens.
+    // Apenas o proprietário pode criar, atualizar ou deletar seus próprios itens.
     match /items/{itemId} {
       allow read: if true;
-      allow create: if request.auth != null; // Permissão relaxada para a migração
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth.uid == resource.data.userId;
     }
 
     // Coleção 'shoppingLists'
@@ -38,7 +31,7 @@ service cloud.firestore {
     // Apenas o proprietário da lista (listOwnerId) pode ler ou deletar os feedbacks enviados a ele.
     match /feedback/{feedbackId} {
       allow create: if true;
-      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.listOwnerId;
+      allow read, update, delete: if request.auth.uid == resource.data.listOwnerId;
     }
   }
 }

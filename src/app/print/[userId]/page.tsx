@@ -85,6 +85,10 @@ export default function PrintPage() {
           )}
         </div>
         
+        <p className="text-sm text-gray-500 -mt-6 mb-10">
+          (Não é preciso instalar nada, o link abrirá no seu navegador)
+        </p>
+        
         <div className="mt-12 flex flex-wrap justify-center gap-4 print:hidden">
             <Button onClick={handleGoBack} size="lg" variant="outline">
                 <ArrowLeft className="mr-2" />

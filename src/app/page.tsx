@@ -80,6 +80,7 @@ import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import emailjs from '@emailjs/browser';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import MigrateData from "@/components/migrate-data";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -446,8 +447,10 @@ export default function DashboardPage() {
                   </Dialog>
                 </div>
               </div>
+              
+              <MigrateData />
 
-              <div className="relative mb-6">
+              <div className="relative my-6">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input 
                       type="text"

@@ -15,7 +15,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
-import type { Material, ShoppingListItem } from "@/types";
+import type { Item, ShoppingListItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -75,7 +75,7 @@ export default function PublicListPage() {
   const { toast } = useToast();
 
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pageOwner, setPageOwner] = useState<UserData | null>(null);
@@ -120,7 +120,7 @@ export default function PublicListPage() {
     }
     console.log("userId em uso:", userId);
 
-    let unsubscribeMaterials: (() => void) | undefined;
+    let unsubscribeItems: (() => void) | undefined;
     let unsubscribeShoppingList: (() => void) | undefined;
 
     const setupListeners = async () => {
@@ -128,7 +128,7 @@ export default function PublicListPage() {
         setPageLoading(true);
 
         const userDocRef = doc(db, "users", userId);
-        const materialsQuery = query(collection(db, "materials"), where("userId", "==", userId));
+        const itemsQuery = query(collection(db, "items"), where("userId", "==", userId));
         const shoppingListDocRef = doc(db, "shoppingLists", userId);
 
         const userDoc = await getDoc(userDocRef);
@@ -143,13 +143,13 @@ export default function PublicListPage() {
           setPageOwner(null);
         }
 
-        const materialsSnapshot = await getDocs(materialsQuery);
-        const materialsData: Material[] = [];
-        materialsSnapshot.forEach((doc) => {
-          materialsData.push({ id: doc.id, ...doc.data() } as Material);
+        const itemsSnapshot = await getDocs(itemsQuery);
+        const itemsData: Item[] = [];
+        itemsSnapshot.forEach((doc) => {
+          itemsData.push({ id: doc.id, ...doc.data() } as Item);
         });
-        materialsData.sort((a, b) => a.name.localeCompare(b.name));
-        setMaterials(materialsData);
+        itemsData.sort((a, b) => a.name.localeCompare(b.name));
+        setItems(itemsData);
 
         const shoppingListDoc = await getDoc(shoppingListDocRef);
         if (shoppingListDoc.exists()) {
@@ -162,19 +162,19 @@ export default function PublicListPage() {
 
         setPageLoading(false);
 
-        unsubscribeMaterials = onSnapshot(
-          materialsQuery,
+        unsubscribeItems = onSnapshot(
+          itemsQuery,
           (querySnapshot) => {
-            const materialsData: Material[] = [];
+            const itemsData: Item[] = [];
             querySnapshot.forEach((doc) => {
-              materialsData.push({ id: doc.id, ...doc.data() } as Material);
+              itemsData.push({ id: doc.id, ...doc.data() } as Item);
             });
-            materialsData.sort((a, b) => a.name.localeCompare(b.name));
-            setMaterials(materialsData);
+            itemsData.sort((a, b) => a.name.localeCompare(b.name));
+            setItems(itemsData);
           },
           (e) => {
-            console.error("Error listening to materials: ", e);
-            setError("Falha ao carregar os materiais.");
+            console.error("Error listening to items: ", e);
+            setError("Falha ao carregar os itens.");
           }
         );
 
@@ -203,7 +203,7 @@ export default function PublicListPage() {
     setupListeners();
 
     return () => {
-      unsubscribeMaterials?.();
+      unsubscribeItems?.();
       unsubscribeShoppingList?.();
     };
   }, [userId]);
@@ -214,7 +214,7 @@ export default function PublicListPage() {
     await setDoc(shoppingListDocRef, { items: newList, userId: userId }, { merge: true });
   }, [userId]);
   
-  const handleToggleItemInShoppingList = useCallback(async (item: Material) => {
+  const handleToggleItemInShoppingList = useCallback(async (item: Item) => {
     const updatedList = [...shoppingList];
     const existingItemIndex = updatedList.findIndex((i) => i.id === item.id);
     
@@ -236,7 +236,7 @@ export default function PublicListPage() {
         await notifyOwnerByEmail(
             `Novo Item Adicionado`,
             `O item <strong>${newItem.name}</strong> foi adicionado à sua lista de compras.`,
-            `Lista de Limpeza Fácil App`
+            `Lista Fácil App`
         );
         
         toast({
@@ -266,7 +266,7 @@ export default function PublicListPage() {
     await notifyOwnerByEmail(
         `Novo Item Avulso Adicionado`,
         `O item avulso "<strong>${newItem.name}</strong>" foi adicionado à sua lista de compras.`,
-        `Lista de Limpeza Fácil App`
+        `Lista Fácil App`
     );
 
     toast({
@@ -313,7 +313,7 @@ export default function PublicListPage() {
         message = `Você recebeu uma nova mensagem de <strong>${feedbackName}</strong>.<br><br><strong>Mensagem:</strong><br>${feedbackText}`;
       }
 
-      await notifyOwnerByEmail(subject, message, 'Lista de Limpeza Fácil App');
+      await notifyOwnerByEmail(subject, message, 'Lista Fácil App');
 
       toast({
         title: "Mensagem Enviada!",
@@ -338,13 +338,13 @@ export default function PublicListPage() {
 
   const shoppingListIds = useMemo(() => new Set(shoppingList.map(item => item.id)), [shoppingList]);
   
-  const filteredMaterials = useMemo(() => {
-    return materials
-      .filter((material) => !shoppingListIds.has(material.id))
-      .filter((material) =>
-        material.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredItems = useMemo(() => {
+    return items
+      .filter((item) => !shoppingListIds.has(item.id))
+      .filter((item) =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase())
       );
-  }, [materials, searchQuery, shoppingListIds]);
+  }, [items, searchQuery, shoppingListIds]);
 
   if (pageLoading) {
     return (
@@ -408,7 +408,7 @@ export default function PublicListPage() {
                     <div className="h-8 w-8">
                         <Logo />
                     </div>
-                    <span className="font-headline text-xl font-semibold">Lista de Limpeza Fácil</span>
+                    <span className="font-headline text-xl font-semibold">Lista Fácil</span>
                 </div>
                 <div className="md:hidden">
                     {/* Placeholder for potential mobile-only actions */}
@@ -505,7 +505,7 @@ export default function PublicListPage() {
                       <div className="flex gap-2">
                         <Input 
                           type="text" 
-                          placeholder="Ex: Bom Ar"
+                          placeholder="Ex: Lâmpada, Pilhas AA"
                           value={customItemName}
                           onChange={(e) => setCustomItemName(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
@@ -515,17 +515,17 @@ export default function PublicListPage() {
                     </div>
                     <Separator className="mb-6"/>
                      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-                        {filteredMaterials.map((material) => {
-                            const isInList = shoppingListIds.has(material.id);
+                        {filteredItems.map((item) => {
+                            const isInList = shoppingListIds.has(item.id);
                             return (
                                 <Card
-                                key={material.id}
+                                key={item.id}
                                 className="flex flex-col overflow-hidden transition-shadow hover:shadow-lg group cursor-pointer"
-                                onClick={() => handleToggleItemInShoppingList(material)}
+                                onClick={() => handleToggleItemInShoppingList(item)}
                                 >
                                     <CardHeader className="flex-row items-center justify-between p-4">
                                         <CardTitle className="font-headline text-base">
-                                        {material.name}
+                                        {item.name}
                                         </CardTitle>
                                         <div className="flex justify-end gap-1">
                                             {isInList ? (
@@ -586,17 +586,3 @@ export default function PublicListPage() {
      </div>
   );
 }
-
-    
-
-
-
-
-
-
-
-    
-
-    
-
-

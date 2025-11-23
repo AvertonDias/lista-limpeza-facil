@@ -59,7 +59,7 @@ export default function PrintPage() {
     navigator.clipboard.writeText(url).then(() => {
       toast({
         title: "Link Copiado!",
-        description: "O link da lista de compras foi copiado para a área de transferência.",
+        description: "O link da sua lista pública foi copiado para a área de transferência.",
       });
     }, (err) => {
       console.error('Could not copy text: ', err);
@@ -83,10 +83,10 @@ export default function PrintPage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4 print:bg-white print:p-0 print:m-0 print:min-h-0">
       <div className="w-full max-w-lg text-center p-8 bg-white rounded-lg shadow-2xl print:shadow-none print:p-4">
         <h1 className="font-headline text-2xl font-bold text-gray-800 mb-2">
-          Está faltando algum item ou algo está quase acabando?
+          Viu que algo está faltando ou acabando?
         </h1>
         <p className="text-lg text-gray-600 mb-2">
-          Escaneie o QR Code abaixo para atualizar a minha lista de compras.
+          Escaneie o QR Code abaixo para me avisar e adicionar na lista de compras.
         </p>
         <p className="text-md text-gray-500 mb-8">
           Você também pode me enviar sugestões ou tirar dúvidas.

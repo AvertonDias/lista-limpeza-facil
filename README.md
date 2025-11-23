@@ -1,30 +1,29 @@
+# Lista Fácil: Suas Listas, Simples e Compartilhadas.
 
-# Lista de Limpeza Fácil: Nunca Mais Fique Sem Material!
-
-**Transforme a maneira como você gerencia os suprimentos de limpeza com o Lista de Limpeza Fácil, um aplicativo inovador projetado para ambientes compartilhados como residências, escritórios e apartamentos.**
+**Transforme a maneira como você gerencia listas em ambientes compartilhados como residências, escritórios e apartamentos com o Lista Fácil, um aplicativo inovador para todas as suas necessidades.**
 
 ## O Problema que Resolvemos
 
-Manter o controle dos materiais de limpeza que estão acabando é um desafio constante em espaços compartilhados. Anotações se perdem, a comunicação falha e, quando você mais precisa, percebe que o produto acabou.
+Manter o controle de itens que estão acabando — seja na despensa, no escritório ou em qualquer outro lugar — é um desafio constante em espaços compartilhados. Anotações se perdem, a comunicação falha e, quando você mais precisa, percebe que o item acabou.
 
 ## A Nossa Solução Inteligente
 
-O Lista de Limpeza Fácil centraliza a gestão de suprimentos de forma simples e colaborativa. Cada administrador da lista possui uma página pública exclusiva, acessível através de um **link compartilhável ou de um QR Code** que pode ser fixado em locais estratégicos (como a despensa ou a área de serviço).
+O Lista Fácil centraliza a gestão de suprimentos de forma simples e colaborativa. Cada administrador da lista possui uma página pública exclusiva, acessível através de um **link compartilhável ou de um QR Code** que pode ser fixado em locais estratégicos (como a geladeira, a despensa ou o quadro de avisos).
 
-Qualquer pessoa — seja um membro da família, colega de trabalho ou prestador de serviço — pode:
+Qualquer pessoa — seja um membro da família, colega de trabalho ou visitante — pode:
 
 - **Escanear o QR Code** ou acessar o link.
-- **Ver a lista de materiais** que você utiliza.
+- **Ver a lista de itens** que você utiliza.
 - **Adicionar um item à sua lista de compras** com apenas um clique.
-- **Adicionar itens personalizados** que não estão na lista pré-definida (ex: "Lâmpada da cozinha").
+- **Adicionar itens personalizados** que não estão na lista pré-definida (ex: "Lâmpada da cozinha" ou "Cartucho de tinta").
 - **Enviar sugestões ou tirar dúvidas** diretamente para o administrador da lista.
 
 ## Funcionalidades Principais
 
 ### Para Administradores (Usuários Cadastrados)
 
-- **Dashboard Intuitivo:** Gerencie sua lista de materiais padrão e sua lista de compras em tempo real.
-- **Controle Total:** Adicione, edite e remova os materiais de limpeza que você usa com frequência.
+- **Dashboard Intuitivo:** Gerencie sua lista de itens padrão e sua lista de compras em tempo real.
+- **Controle Total:** Adicione, edite e remova os itens que você usa com frequência.
 - **Lista de Compras Centralizada:** Veja instantaneamente os itens que outras pessoas adicionaram à sua lista.
 - **Notificações por E-mail:** Seja avisado por e-mail sempre que um novo item for adicionado ou quando receber uma nova mensagem.
 - **Caixa de Entrada de Feedback:** Receba e gerencie sugestões e dúvidas enviadas através da sua página pública.
@@ -38,10 +37,10 @@ Qualquer pessoa — seja um membro da família, colega de trabalho ou prestador 
 
 ## Como Funciona
 
-1.  **Cadastre-se:** Crie sua conta e adicione os materiais de limpeza que você costuma usar.
-2.  **Compartilhe:** Gere seu link público e QR Code. Envie o link para outras pessoas ou imprima o QR Code e cole-o na sua despensa.
+1.  **Cadastre-se:** Crie sua conta e adicione os itens que você costuma usar.
+2.  **Compartilhe:** Gere seu link público e QR Code. Envie o link para outras pessoas ou imprima o QR Code e cole-o onde precisar.
 3.  **Colabore:** Quando alguém notar que um produto está acabando, escaneia o código, encontra o item na lista e o adiciona às suas compras.
 4.  **Seja Notificado:** Você recebe um e-mail informando sobre o novo item.
 5.  **Compre com Inteligência:** Acesse seu painel e veja a lista de compras sempre atualizada.
 
-**Com o Lista de Limpeza Fácil, a colaboração é a chave para uma despensa sempre abastecida!**
+**Com o Lista Fácil, a colaboração é a chave para uma vida mais organizada!**

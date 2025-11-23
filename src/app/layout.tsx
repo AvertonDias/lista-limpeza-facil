@@ -4,8 +4,8 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Lista de Limpeza Fácil",
-  description: "Gerencie sua lista de compras de limpeza de forma fácil e organizada.",
+  title: "Lista Fácil",
+  description: "Gerencie suas listas de compras de forma fácil e compartilhada.",
   icons: {
     apple: "/images/placeholder-icon.png",
     icon: "/images/placeholder-icon.png",

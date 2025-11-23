@@ -113,7 +113,7 @@ export default function Header() {
               <div className="h-8 w-8">
                 <Logo />
               </div>
-              <span className="font-headline text-xl font-semibold hidden sm:inline-block">Lista de Limpeza Fácil</span>
+              <span className="font-headline text-xl font-semibold hidden sm:inline-block">Lista Fácil</span>
             </Link>
             <nav className="hidden md:flex items-center gap-2">
                 <Button variant="link" asChild>

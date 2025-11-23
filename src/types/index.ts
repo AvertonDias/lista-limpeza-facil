@@ -1,12 +1,12 @@
 import { Timestamp } from "firebase/firestore";
 
-export interface Material {
+export interface Item {
   id: string;
   name: string;
   userId: string;
 }
 
-export interface ShoppingListItem extends Omit<Material, 'userId'> {
+export interface ShoppingListItem extends Omit<Item, 'userId'> {
   quantity?: number;
   createdAt?: Timestamp;
 }

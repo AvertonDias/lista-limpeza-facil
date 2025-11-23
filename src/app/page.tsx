@@ -19,7 +19,7 @@ import {
   arrayUnion,
   orderBy,
 } from "firebase/firestore";
-import type { Material, ShoppingListItem, Feedback } from "@/types";
+import type { Item, ShoppingListItem, Feedback } from "@/types";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -86,13 +86,13 @@ export default function DashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
-  const [materials, setMaterials] = useState<Material[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [feedback, setFeedback] = useState<Feedback[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [editingMaterial, setEditingMaterial] = useState<Material | null>(null);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [newItemName, setNewItemName] = useState("");
-  const [materialsLoading, setMaterialsLoading] = useState(true);
+  const [itemsLoading, setItemsLoading] = useState(true);
   const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -110,30 +110,30 @@ export default function DashboardPage() {
       // Init EmailJS
       emailjs.init({ publicKey: "Yj5CBlcpbHrHQeYik" });
       
-      // Listen for materials
-      setMaterialsLoading(true);
-      const materialsQuery = query(collection(db, "materials"), where("userId", "==", user.uid));
-      const unsubscribeMaterials = onSnapshot(materialsQuery, (querySnapshot) => {
-        const materialsData: Material[] = [];
+      // Listen for items
+      setItemsLoading(true);
+      const itemsQuery = query(collection(db, "items"), where("userId", "==", user.uid));
+      const unsubscribeItems = onSnapshot(itemsQuery, (querySnapshot) => {
+        const itemsData: Item[] = [];
         querySnapshot.forEach((doc) => {
           const data = doc.data();
-          materialsData.push({
+          itemsData.push({
              id: doc.id,
              name: data.name,
              userId: data.userId
-            } as Material);
+            } as Item);
         });
-        materialsData.sort((a, b) => a.name.localeCompare(b.name));
-        setMaterials(materialsData);
-        setMaterialsLoading(false);
+        itemsData.sort((a, b) => a.name.localeCompare(b.name));
+        setItems(itemsData);
+        setItemsLoading(false);
       }, (error) => {
-        console.error("Error fetching materials: ", error);
+        console.error("Error fetching items: ", error);
         toast({
           variant: "destructive",
-          title: "Erro ao buscar materiais",
-          description: "Não foi possível carregar os materiais.",
+          title: "Erro ao buscar itens",
+          description: "Não foi possível carregar seus itens padrão.",
         });
-        setMaterialsLoading(false);
+        setItemsLoading(false);
       });
       
       // Listen for feedback
@@ -155,7 +155,7 @@ export default function DashboardPage() {
 
 
       return () => {
-        unsubscribeMaterials();
+        unsubscribeItems();
         unsubscribeFeedback();
       }
     }
@@ -191,7 +191,7 @@ export default function DashboardPage() {
     await setDoc(shoppingListDocRef, { items: newList, userId: user.uid }, { merge: true });
   }
 
-  const handleAddItemToShoppingList = (item: Material) => {
+  const handleAddItemToShoppingList = (item: Item) => {
     if (!user) return;
     const updatedList = [...shoppingList];
     const existingItem = updatedList.find((i) => i.id === item.id);
@@ -227,13 +227,13 @@ export default function DashboardPage() {
     router.push(`/print/${user.uid}`);
   }
 
-  const handleOpenForm = (material: Material | null = null) => {
-    setEditingMaterial(material);
-    setNewItemName(material?.name || "");
+  const handleOpenForm = (item: Item | null = null) => {
+    setEditingItem(item);
+    setNewItemName(item?.name || "");
     setIsFormOpen(true);
   };
 
-  const handleSaveMaterial = async () => {
+  const handleSaveItem = async () => {
     if (!user) return;
     if (!newItemName.trim()) {
       toast({
@@ -245,10 +245,10 @@ export default function DashboardPage() {
     }
 
     try {
-      if (editingMaterial) {
-        // Edit existing material
-        const materialDoc = doc(db, "materials", editingMaterial.id);
-        await updateDoc(materialDoc, {
+      if (editingItem) {
+        // Edit existing item
+        const itemDoc = doc(db, "items", editingItem.id);
+        await updateDoc(itemDoc, {
             name: newItemName,
         });
         toast({
@@ -256,21 +256,21 @@ export default function DashboardPage() {
           description: `O item ${newItemName} foi atualizado com sucesso.`,
         });
       } else {
-        // Add new material
-        await addDoc(collection(db, "materials"), {
+        // Add new item
+        await addDoc(collection(db, "items"), {
             name: newItemName,
             userId: user.uid,
         });
         toast({
           title: "Item Adicionado!",
-          description: `O item ${newItemName} foi adicionado à lista de materiais.`,
+          description: `O item ${newItemName} foi adicionado à sua lista padrão.`,
         });
       }
       setIsFormOpen(false);
       setNewItemName("");
-      setEditingMaterial(null);
+      setEditingItem(null);
     } catch(e) {
-        console.error("Error saving material: ", e);
+        console.error("Error saving item: ", e);
         toast({
             variant: "destructive",
             title: "Erro ao salvar",
@@ -279,16 +279,16 @@ export default function DashboardPage() {
     }
   };
   
-  const handleDeleteMaterial = async (materialId: string) => {
+  const handleDeleteItem = async (itemId: string) => {
      try {
-        await deleteDoc(doc(db, "materials", materialId));
-        handleRemoveItemFromShoppingList(materialId);
+        await deleteDoc(doc(db, "items", itemId));
+        handleRemoveItemFromShoppingList(itemId);
         toast({
             title: "Item Removido",
-            description: "O item foi removido da sua lista de materiais.",
+            description: "O item foi removido da sua lista padrão.",
         });
      } catch(e) {
-        console.error("Error deleting material: ", e);
+        console.error("Error deleting item: ", e);
         toast({
             variant: "destructive",
             title: "Erro ao remover",
@@ -315,11 +315,11 @@ export default function DashboardPage() {
     }
   };
 
-  const filteredMaterials = useMemo(() => {
-    return materials.filter((material) =>
-      material.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredItems = useMemo(() => {
+    return items.filter((item) =>
+      item.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [materials, searchQuery]);
+  }, [items, searchQuery]);
 
   if (loading || !user) {
     return (
@@ -397,7 +397,7 @@ export default function DashboardPage() {
            <div>
               <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
                 <h1 className="font-headline text-3xl font-bold tracking-tight">
-                  Materiais de Limpeza
+                  Meus Itens Padrão
                 </h1>
                 <div className="flex gap-2">
                   
@@ -408,7 +408,7 @@ export default function DashboardPage() {
                   <Dialog open={isFormOpen} onOpenChange={(isOpen) => {
                       setIsFormOpen(isOpen);
                       if (!isOpen) {
-                        setEditingMaterial(null);
+                        setEditingItem(null);
                         setNewItemName("");
                       }
                   }}>
@@ -421,10 +421,10 @@ export default function DashboardPage() {
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>
-                          {editingMaterial ? "Editar Item" : "Adicionar Novo Item"}
+                          {editingItem ? "Editar Item" : "Adicionar Novo Item"}
                         </DialogTitle>
                         <DialogDescription>
-                            Adicione ou edite um item da sua lista de materiais para que outros possam adicioná-lo à sua lista de compras.
+                            Adicione ou edite um item da sua lista padrão para que outros possam adicioná-lo à sua lista de compras.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
@@ -434,13 +434,13 @@ export default function DashboardPage() {
                             id="name"
                             value={newItemName}
                             onChange={(e) => setNewItemName(e.target.value)}
-                            placeholder="Ex: Detergente"
+                            placeholder="Ex: Café, Leite"
                           />
                         </div>
                       </div>
                       <DialogFooter>
                         <Button variant="outline" onClick={() => setIsFormOpen(false)}>Cancelar</Button>
-                        <Button onClick={handleSaveMaterial}>Salvar</Button>
+                        <Button onClick={handleSaveItem}>Salvar</Button>
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
@@ -451,31 +451,31 @@ export default function DashboardPage() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input 
                       type="text"
-                      placeholder="Pesquisar material..."
+                      placeholder="Pesquisar item..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-10 bg-background"
                   />
               </div>
 
-              {materialsLoading ? (
+              {itemsLoading ? (
                   <div className="flex justify-center items-center h-64">
                       <Loader2 className="h-12 w-12 animate-spin text-primary" />
                   </div>
-              ) : filteredMaterials.length > 0 ? (
+              ) : filteredItems.length > 0 ? (
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {filteredMaterials.map((material) => (
+                  {filteredItems.map((item) => (
                       <Card
-                      key={material.id}
+                      key={item.id}
                       className="group/item flex flex-col overflow-hidden transition-shadow hover:shadow-lg cursor-pointer bg-background"
-                      onClick={() => handleAddItemToShoppingList(material)}
+                      onClick={() => handleAddItemToShoppingList(item)}
                       >
                        <CardHeader className="flex-row items-start justify-between p-4">
                           <CardTitle className="font-headline text-base font-semibold leading-snug">
-                            {material.name}
+                            {item.name}
                           </CardTitle>
                           <div className="flex flex-col gap-1 transition-opacity">
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleOpenForm(material); }}>
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleOpenForm(item); }}>
                               <Edit className="h-4 w-4" />
                             </Button>
                             <AlertDialog>
@@ -488,12 +488,12 @@ export default function DashboardPage() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Esta ação não pode ser desfeita. Isso removerá o item da sua lista de materiais e também da lista de compras.
+                                    Esta ação não pode ser desfeita. Isso removerá o item da sua lista padrão e também da lista de compras.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDeleteMaterial(material.id)}>Continuar</AlertDialogAction>
+                                  <AlertDialogAction onClick={() => handleDeleteItem(item.id)}>Continuar</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
@@ -504,7 +504,7 @@ export default function DashboardPage() {
                   </div>
               ) : (
                   <div className="text-center text-muted-foreground py-16 rounded-lg bg-background">
-                      <p className="text-lg font-medium">{searchQuery ? "Nenhum item encontrado" : "Nenhum material cadastrado"}</p>
+                      <p className="text-lg font-medium">{searchQuery ? "Nenhum item encontrado" : "Nenhum item cadastrado"}</p>
                       <p className="text-sm">{searchQuery ? "Tente uma busca diferente." : "Clique em 'Adicionar Item' para começar."}</p>
                   </div>
               )}
@@ -606,12 +606,10 @@ export default function DashboardPage() {
                         {renderShoppingList()}
                     </div>
                     <SheetFooter className="p-6 pt-0">
-                        <Button onClick={() => setIsSheetOpen(false)} className="w-full">Fechar</Button>
+                        <Button onClick={() => setIsSheetOpen(false)} className="w-full">Fechar</Button> procrastinatin
                     </SheetFooter>
                 </SheetContent>
             </Sheet>
         </div>
     </div>);
 }
-
-    

@@ -79,7 +79,7 @@ export default function LoginPage() {
             </div>
           <CardTitle className="font-headline text-3xl">Bem-vindo!</CardTitle>
           <CardDescription>
-            Faça login para gerenciar sua lista de limpeza.
+            Faça login para gerenciar suas listas.
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>

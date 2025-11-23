@@ -1,6 +1,6 @@
 {
   "packageId": "br.com.listalimpezafacil.app",
-  "host": "app.twa",
+  "host": "lista-de-limpeza-facil.vercel.app",
   "name": "Lista de Limpeza Fácil",
   "launcherName": "Lista Fácil",
   "display": "standalone",
@@ -13,7 +13,7 @@
   "backgroundColor": "#F5F5F5",
   "enableNotifications": true,
   "startUrl": "/",
-  "iconUrl": "http://localhost:3000/images/placeholder-icon.png",
+  "iconUrl": "https://lista-de-limpeza-facil.vercel.app/images/placeholder-icon.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "/home/user/studio/android.keystore",
@@ -23,7 +23,7 @@
   "appVersionCode": 1,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "http://localhost:3000/manifest.webmanifest",
+  "webManifestUrl": "https://lista-de-limpeza-facil.vercel.app/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {},
   "alphaDependencies": {
@@ -32,7 +32,7 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "http://localhost:3000/",
+  "fullScopeUrl": "https://lista-de-limpeza-facil.vercel.app/",
   "minSdkVersion": 21,
   "orientation": "default",
   "fingerprints": [],

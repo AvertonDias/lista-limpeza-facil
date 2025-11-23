@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.vercel.lista_de_limpeza_facil.twa",
+      "sha256_cert_fingerprints": [
+        "1D:4A:2A:0A:4A:A5:72:35:64:25:24:E5:69:4C:A8:84:8F:A1:6A:19:D8:17:5D:F3:33:43:45:51:7A:F2:47:3B"
+      ]
+    }
+  }
+]

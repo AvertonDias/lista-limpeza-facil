@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react";
 import QRCode from "qrcode.react";
-import { Loader2, Printer, ArrowLeft, Copy, ListChecks } from "lucide-react";
+import { Loader2, Printer, ArrowLeft, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParams, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
@@ -82,9 +82,6 @@ export default function PrintPage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4 print:bg-white print:p-0 print:m-0 print:min-h-0">
       <div className="w-full max-w-lg text-center p-8 bg-white rounded-lg shadow-2xl print:shadow-none print:p-4">
-        <div className="mx-auto w-16 h-16 mb-6">
-          <ListChecks className="w-full h-full text-primary" />
-        </div>
         <h1 className="font-headline text-2xl font-bold text-gray-800 mb-2">
           Está faltando algum item ou algo está quase acabando?
         </h1>

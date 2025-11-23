@@ -7,6 +7,17 @@ import { Loader2, Printer, ArrowLeft, Copy, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useParams, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import { logoUri } from "@/lib/logo-uri";
+
+// Function to convert image to Data URI
+const toDataURL = (url: string) => fetch(url)
+  .then(response => response.blob())
+  .then(blob => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  }));
 
 export default function PrintPage() {
   const params = useParams();
@@ -19,20 +30,14 @@ export default function PrintPage() {
   const userId = params.userId as string;
 
   useEffect(() => {
-    // Generate the logo as a Data URI to be embedded in the QR Code
-    const svgString = `
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#457B9D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m16 6 4 4-10 10-4-4 10-10"/>
-        <path d="m10 12 4 4"/>
-        <path d="M12 20h.01"/>
-        <path d="M4 12h.01"/>
-        <path d="M4 16h.01"/>
-        <path d="M8 20h.01"/>
-        <path d="m20 8-4-4"/>
-      </svg>
-    `;
-    const encodedSvg = btoa(svgString);
-    setLogoDataUri(`data:image/svg+xml;base64,${encodedSvg}`);
+    // Convert the logo image to a Data URI to be embedded in the QR Code
+    if (logoUri) {
+      toDataURL(logoUri)
+        .then(dataUrl => {
+          setLogoDataUri(dataUrl as string);
+        })
+        .catch(console.error);
+    }
     
     if (typeof window !== "undefined" && userId) {
       const publicUrl = `${window.location.origin}/lista/${userId}`;
@@ -88,7 +93,7 @@ export default function PrintPage() {
         </p>
 
         <div className="flex justify-center mb-6">
-          {url ? (
+          {url && logoDataUri ? (
             <div className="p-4 bg-white border-4 border-gray-200 rounded-lg">
                 <QRCode 
                   value={url} 

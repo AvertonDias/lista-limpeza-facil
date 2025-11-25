@@ -44,6 +44,9 @@ export default function AuthActionPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!searchParams) {
+      return;
+    }
     const modeParam = searchParams.get("mode");
     const oobCodeParam = searchParams.get("oobCode");
 

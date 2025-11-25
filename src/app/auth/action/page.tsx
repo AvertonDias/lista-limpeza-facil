@@ -1,5 +1,9 @@
 "use client";
 
+// This segment is not statically generated
+// It will be rendered on the server for every request
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {

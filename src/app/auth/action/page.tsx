@@ -1,10 +1,7 @@
+
 "use client";
 
-// This segment is not statically generated
-// It will be rendered on the server for every request
-export const dynamic = 'force-dynamic'
-
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   verifyPasswordResetCode,
@@ -27,7 +24,8 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import { Logo } from "@/components/icons/logo";
 import Link from "next/link";
 
-export default function AuthActionPage() {
+
+function AuthActionHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -44,9 +42,6 @@ export default function AuthActionPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!searchParams) {
-      return;
-    }
     const modeParam = searchParams.get("mode");
     const oobCodeParam = searchParams.get("oobCode");
 
@@ -227,5 +222,18 @@ export default function AuthActionPage() {
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
       </div>
+  );
+}
+
+
+export default function AuthActionPage() {
+  return (
+    <Suspense fallback={
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    }>
+      <AuthActionHandler />
+    </Suspense>
   );
 }

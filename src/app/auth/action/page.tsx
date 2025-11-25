@@ -42,6 +42,12 @@ function AuthActionHandler() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!searchParams) {
+        setError("Parâmetros de URL não disponíveis.");
+        setIsLoading(false);
+        return;
+    }
+    
     const modeParam = searchParams.get("mode");
     const oobCodeParam = searchParams.get("oobCode");
 

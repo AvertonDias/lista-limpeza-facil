@@ -61,6 +61,10 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { sendEmail } from "@/lib/email";
 
+// This segment is not statically generated
+// It will be rendered on the server for every request
+export const dynamic = 'force-dynamic';
+
 interface UserData {
     displayName: string;
     email: string;

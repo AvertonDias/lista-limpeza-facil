@@ -506,7 +506,7 @@ export default function PublicListPage() {
                       <div className="flex gap-2">
                         <Input 
                           type="text" 
-                          placeholder="Ex: Lâmpadas, Sacos de lixo, Sabão em pó..."
+                          placeholder="Bom Ar"
                           value={customItemName}
                           onChange={(e) => setCustomItemName(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}

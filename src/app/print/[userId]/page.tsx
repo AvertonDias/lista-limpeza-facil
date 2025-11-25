@@ -27,7 +27,7 @@ export default function PrintPage() {
   const [loading, setLoading] = useState(true);
   const [logoDataUri, setLogoDataUri] = useState<string | null>(null);
 
-  const userId = params.userId as string;
+  const userId = params?.userId as string;
 
   useEffect(() => {
     // Convert the logo image to a Data URI to be embedded in the QR Code

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -70,7 +71,7 @@ type FeedbackType = "suggestion" | "doubt" | null;
 
 export default function PublicListPage() {
   const params = useParams();
-  const userId = params.userId as string;
+  const userId = params?.userId as string;
 
   const { toast } = useToast();
 
@@ -586,3 +587,5 @@ export default function PublicListPage() {
      </div>
   );
 }
+
+    

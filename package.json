@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "clean": "rimraf .next node_modules"
+    "clean": "rimraf .next node_modules package-lock.json"
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",

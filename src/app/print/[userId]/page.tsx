@@ -9,6 +9,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { logoUri } from "@/lib/logo-uri";
 
+export const dynamic = 'force-dynamic';
+
 // Function to convert image to Data URI
 const toDataURL = (url: string) => fetch(url)
   .then(response => response.blob())

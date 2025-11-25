@@ -5,30 +5,47 @@ import { useParams } from 'next/navigation';
 import type { ShoppingListItem } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Logo } from '@/components/icons/logo';
-import { Separator } from '@/components/ui/separator';
-import Image from 'next/image';
+import { Loader2 } from 'lucide-react';
 
 export default function SharedListPage() {
   const params = useParams();
+  const listId = params?.listId as string;
+  
   const [shoppingList, setShoppingList] = useState<ShoppingListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (params.listId) {
-      try {
-        const decodedString = decodeURIComponent(atob(params.listId as string));
-        const list = JSON.parse(decodedString);
-        if (Array.isArray(list)) {
-          setShoppingList(list);
-        } else {
-            throw new Error("Formato de lista inválido.");
-        }
-      } catch (e) {
-        console.error("Falha ao decodificar ou analisar o listId", e);
-        setError("Não foi possível carregar a lista. O link pode estar corrompido ou expirado.");
-      }
+    if (!listId) {
+      // Se o listId não estiver disponível ainda, não faz nada.
+      // O hook vai rodar de novo quando ele estiver.
+      return;
     }
-  }, [params.listId]);
+
+    try {
+      const decodedString = decodeURIComponent(atob(listId));
+      const list = JSON.parse(decodedString);
+      
+      if (Array.isArray(list)) {
+        setShoppingList(list);
+      } else {
+        throw new Error("Formato de lista inválido.");
+      }
+    } catch (e) {
+      console.error("Falha ao decodificar ou analisar o listId", e);
+      setError("Não foi possível carregar a lista. O link pode estar corrompido ou expirado.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [listId]); // A dependência é o `listId`
+
+  if (isLoading) {
+    return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
@@ -48,7 +65,7 @@ export default function SharedListPage() {
           ) : shoppingList.length > 0 ? (
             <ul className="space-y-3">
               {shoppingList.map((item, index) => (
-                <li key={item.id}>
+                <li key={item.id || index}>
                     <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
                         <div className="flex items-center gap-4">
                           <span className="font-medium">{item.name}</span>

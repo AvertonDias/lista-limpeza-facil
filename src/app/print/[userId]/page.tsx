@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useParams, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { logoUri } from "@/lib/logo-uri";
+import { Capacitor } from "@capacitor/core";
 
 export const dynamic = 'force-dynamic';
 
@@ -28,10 +29,14 @@ export default function PrintPage() {
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [logoDataUri, setLogoDataUri] = useState<string | null>(null);
+  const [isNative, setIsNative] = useState(false);
 
   const userId = params?.userId as string;
 
   useEffect(() => {
+    // Check if running in a native Capacitor container
+    setIsNative(Capacitor.isNativePlatform());
+
     // Convert the logo image to a Data URI to be embedded in the QR Code
     if (logoUri) {
       toDataURL(logoUri)
@@ -127,10 +132,12 @@ export default function PrintPage() {
                 <Copy className="mr-2" />
                 Copiar Link
             </Button>
-            <Button onClick={handlePrint} size="lg">
-                <Printer className="mr-2" />
-                Imprimir
-            </Button>
+            {!isNative && (
+              <Button onClick={handlePrint} size="lg">
+                  <Printer className="mr-2" />
+                  Imprimir
+              </Button>
+            )}
         </div>
       </div>
        <style jsx global>{`
@@ -146,7 +153,3 @@ export default function PrintPage() {
     </div>
   );
 }
-
-    
-
-    

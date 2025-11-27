@@ -9,6 +9,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { logoUri } from "@/lib/logo-uri";
 import { Capacitor } from "@capacitor/core";
+import { Share } from "@capacitor/share";
 
 export const dynamic = 'force-dynamic';
 
@@ -53,8 +54,26 @@ export default function PrintPage() {
     }
   }, [userId]);
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrintOrShare = async () => {
+    if (isNative) {
+      if (!url) return;
+      try {
+        await Share.share({
+          title: 'Compartilhar Lista',
+          text: 'Escaneie o QR code ou use este link para acessar a lista:',
+          url: url,
+          dialogTitle: 'Compartilhar Lista de Compras',
+        });
+      } catch (error) {
+         toast({
+            variant: "destructive",
+            title: "Não foi possível compartilhar",
+            description: "Ocorreu um erro ao tentar abrir a caixa de compartilhamento.",
+        });
+      }
+    } else {
+      window.print();
+    }
   };
 
   const handleGoBack = () => {
@@ -132,12 +151,10 @@ export default function PrintPage() {
                 <Copy className="mr-2" />
                 Copiar Link
             </Button>
-            {!isNative && (
-              <Button onClick={handlePrint} size="lg">
-                  <Printer className="mr-2" />
-                  Imprimir
-              </Button>
-            )}
+            <Button onClick={handlePrintOrShare} size="lg">
+                <Printer className="mr-2" />
+                {isNative ? 'Compartilhar' : 'Imprimir'}
+            </Button>
         </div>
       </div>
        <style jsx global>{`

@@ -11,6 +11,8 @@
     "clean": "rimraf .next node_modules package-lock.json"
   },
   "dependencies": {
+    "@capacitor/share": "^6.0.0",
+    "@ducanh2912/next-pwa": "^10.2.7",
     "@emailjs/browser": "^4.4.1",
     "@genkit-ai/googleai": "^1.0.0",
     "@hookform/resolvers": "^4.1.3",

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCallback } from 'react';
@@ -68,13 +67,23 @@ export const useNotificationManager = () => {
                 console.log("Permissão para notificação concedida.");
 
                 const vapidKey = "BGgAaOC-KPGKCA0baZggbWM9qWrGyNw4JGyECyAVG0B3Y8F7KDbMEVX0JVh3EyqOj5SkS0ozHLrmWmzr8CsJvOB";
-                const fcmToken = await getToken(messaging, { vapidKey });
+                
+                try {
+                    const fcmToken = await getToken(messaging, { vapidKey });
 
-                if (fcmToken) {
-                    console.log("FCM Token:", fcmToken);
-                    // TODO: Enviar este token para o seu servidor para que você possa enviar notificações.
-                } else {
-                    console.log("Não foi possível obter o token de notificação.");
+                    if (fcmToken) {
+                        console.log("FCM Token:", fcmToken);
+                        // TODO: Enviar este token para o seu servidor para que você possa enviar notificações.
+                    } else {
+                        console.log("Não foi possível obter o token de notificação.");
+                    }
+                } catch (error) {
+                    console.error("Erro ao obter o token FCM:", error);
+                     uiToast({
+                        variant: "destructive",
+                        title: "Falha ao registrar notificações",
+                        description: "Não foi possível obter o token para notificações. Verifique se a API Firebase Cloud Messaging está ativada no seu projeto Google Cloud.",
+                    });
                 }
             } else {
                 console.warn("Permissão para notificação não concedida.");
@@ -85,7 +94,7 @@ export const useNotificationManager = () => {
         } catch (error) {
             console.error("Erro ao registrar notificações web:", error);
         }
-    }, []);
+    }, [uiToast]);
 
     const init = useCallback(() => {
         if (Capacitor.isNativePlatform()) {

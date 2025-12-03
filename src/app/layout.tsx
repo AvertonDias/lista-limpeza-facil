@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { AuthProvider } from "@/components/auth-provider";
-import { Toaster } from "@/components/ui/toaster";
+import { AuthProviderClient } from "@/components/auth-provider-client";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,10 +30,9 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <AuthProvider>
+        <AuthProviderClient>
           {children}
-          <Toaster />
-        </AuthProvider>
+        </AuthProviderClient>
       </body>
     </html>
   );

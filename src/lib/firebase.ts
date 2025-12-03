@@ -28,3 +28,4 @@ const messaging = (typeof window !== 'undefined') ? getMessaging(app) : null;
 
 export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, arrayRemove, arrayUnion, onMessage, sendPasswordResetEmail, verifyPasswordResetCode, confirmPasswordReset };
 export type { User, UserCredential };
+

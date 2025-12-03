@@ -67,7 +67,7 @@ export const useNotificationManager = () => {
             if (permission === "granted") {
                 console.log("Permissão para notificação concedida.");
 
-                const vapidKey = "BGh5wCFGkMwqR8KCT8H9rFj_gS6fF2y5P2w3I8h4k9j8VzJ7l5nZ5wA9mQ4wS8gJ3sY7R5cK2bZ4fE6vX8cW3yE";
+                const vapidKey = "BGgAaOC-KPGKCA0baZggbWM9qWrGyNw4JGyECyAVG0B3Y8F7KDbMEVX0JVh3EyqOj5SkS0ozHLrmWmzr8CsJvOB";
                 const fcmToken = await getToken(messaging, { vapidKey });
 
                 if (fcmToken) {

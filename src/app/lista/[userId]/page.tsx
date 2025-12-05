@@ -105,8 +105,8 @@ export default function PublicListPage() {
           subject: subject,
           message: message,
         };
-        await sendEmail('template_ynk7ot9', templateParams);
-        console.log('E-mail de notificação enviado com sucesso!');
+        // await sendEmail('template_ynk7ot9', templateParams);
+        console.log('Envio de e-mail desativado temporariamente.');
       } catch (err) {
         console.error('Falha ao enviar e-mail:', err);
       }
@@ -591,15 +591,5 @@ export default function PublicListPage() {
      </div>
   );
 }
-
-    
-    
-
-    
-
-
-
-
-    
 
     

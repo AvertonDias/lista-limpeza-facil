@@ -85,18 +85,7 @@ export const useNotificationManager = () => {
             if (permission === "granted") {
                 console.log("Permissão Web concedida.");
                 const vapidKey = "BGgAa0C-KPGKCA0baZggbWM9qWrGyNw4JGyECyAVGoB3Y8F7KDbMEvX0JVh3EyqOj5SkS0ozHLrmWmzr8CsJvO8"; 
-                let tokenOptions = { vapidKey };
-
-                if ('serviceWorker' in navigator) {
-                    try {
-                        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-                        tokenOptions = { ...tokenOptions, serviceWorkerRegistration: registration } as any;
-                    } catch (swError) {
-                        console.error("Erro ao registrar Service Worker:", swError);
-                    }
-                }
-
-                const fcmToken = await getToken(messaging, tokenOptions);
+                const fcmToken = await getToken(messaging, { vapidKey });
 
                 if (fcmToken) {
                     console.log("Token Web gerado:", fcmToken);

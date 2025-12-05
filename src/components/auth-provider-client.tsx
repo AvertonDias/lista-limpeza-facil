@@ -12,11 +12,12 @@ function NotificationHandler() {
   const { init: initNotifications } = useNotificationManager();
 
   useEffect(() => {
-    // Apenas inicializa se houver um usuário
+    // Apenas inicializa se houver um usuário e garante que seja executado apenas uma vez.
     if (user) {
       initNotifications(user);
     }
-  }, [user, initNotifications]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Depender do 'user' para garantir que ele não seja nulo.
 
   return null;
 }

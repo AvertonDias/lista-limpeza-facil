@@ -5,14 +5,16 @@ import { Toaster } from "./ui/toaster";
 import { useNotificationManager } from "@/hooks/use-notification-manager";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
+import type { User } from "firebase/auth";
 
 function NotificationHandler() {
   const { user } = useAuth();
   const { init: initNotifications } = useNotificationManager();
 
   useEffect(() => {
+    // Apenas inicializa se houver um usuário
     if (user) {
-      initNotifications();
+      initNotifications(user);
     }
   }, [user, initNotifications]);
 

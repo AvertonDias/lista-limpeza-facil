@@ -7,45 +7,42 @@ import { Toast } from '@capacitor/toast';
 import { getMessaging, getToken } from "firebase/messaging";
 import { db, messaging } from '@/lib/firebase';
 import { useToast } from './use-toast';
-import { useAuth } from './use-auth';
 import { doc, updateDoc, arrayUnion, setDoc } from 'firebase/firestore';
+import type { User } from 'firebase/auth';
+
+// Esta função agora está fora do hook para não depender do contexto do React
+const saveTokenToDb = async (user: User, fcmToken: string) => {
+    if (!user) {
+        console.warn("Usuário não autenticado, não é possível salvar o token.");
+        return;
+    }
+
+    try {
+        const userDocRef = doc(db, "users", user.uid);
+        await updateDoc(userDocRef, {
+            fcmTokens: arrayUnion(fcmToken)
+        });
+        console.log("Token FCM salvo no Firestore com sucesso via updateDoc.");
+    } catch (error) {
+        console.error("Erro ao tentar 'updateDoc' para salvar token: ", error);
+        // Fallback: Se o documento não existe, tenta criá-lo.
+        if ((error as any).code === 'not-found' || (error as any).message.includes('No document to update')) {
+            try {
+                const userDocRef = doc(db, "users", user.uid);
+                await setDoc(userDocRef, { fcmTokens: [fcmToken] }, { merge: true });
+                console.log("Documento de usuário criado e token FCM salvo via setDoc.");
+            } catch (e) {
+                console.error("Erro ao tentar 'setDoc' para salvar token: ", e);
+            }
+        }
+    }
+};
 
 
 export const useNotificationManager = () => {
     const { toast: uiToast } = useToast();
-    const { user } = useAuth();
 
-    const saveTokenToDb = useCallback(async (fcmToken: string) => {
-        if (!user) {
-            console.warn("Usuário não autenticado, não é possível salvar o token.");
-            return;
-        }
-
-        try {
-            const userDocRef = doc(db, "users", user.uid);
-            await updateDoc(userDocRef, { 
-                fcmTokens: arrayUnion(fcmToken) 
-            });
-            console.log("Token FCM salvo no Firestore com sucesso.");
-
-        } catch (error) {
-            console.error("Erro ao salvar token no Firestore: ", error);
-            // Se o updateDoc falhar porque o documento não existe, podemos tentar criar com setDoc.
-            // Isso pode acontecer em casos raros de race condition.
-            if ((error as any).code === 'not-found') {
-                try {
-                    const userDocRef = doc(db, "users", user.uid);
-                    await setDoc(userDocRef, { fcmTokens: [fcmToken] }, { merge: true });
-                    console.log("Documento de usuário criado e token FCM salvo.");
-                } catch (e) {
-                    console.error("Erro ao tentar criar documento de usuário com token: ", e);
-                }
-            }
-        }
-
-    }, [user]);
-
-    const registerNative = useCallback(async () => {
+    const registerNative = useCallback(async (user: User) => {
         let permStatus = await PushNotifications.checkPermissions();
 
         if (permStatus.receive === 'prompt') {
@@ -61,20 +58,20 @@ export const useNotificationManager = () => {
 
         await PushNotifications.register();
 
-        await PushNotifications.addListener('registration',
+        PushNotifications.addListener('registration',
             (token) => {
                 console.info('Registration token: ', token.value);
-                saveTokenToDb(token.value);
+                saveTokenToDb(user, token.value);
             }
         );
 
-        await PushNotifications.addListener('registrationError',
+        PushNotifications.addListener('registrationError',
             (error: any) => {
                 console.error('Error on registration: ' + JSON.stringify(error));
             }
         );
 
-        await PushNotifications.addListener('pushNotificationReceived',
+        PushNotifications.addListener('pushNotificationReceived',
             (notification) => {
                 console.log('Push received: ' + JSON.stringify(notification));
                  uiToast({
@@ -84,9 +81,9 @@ export const useNotificationManager = () => {
             }
         );
 
-    }, [uiToast, saveTokenToDb]);
+    }, [uiToast]);
 
-    const registerWeb = useCallback(async () => {
+    const registerWeb = useCallback(async (user: User) => {
         if (!messaging) {
             console.warn("Firebase Messaging não está disponível.");
             return;
@@ -104,7 +101,7 @@ export const useNotificationManager = () => {
 
                     if (fcmToken) {
                         console.log("FCM Token:", fcmToken);
-                        await saveTokenToDb(fcmToken);
+                        await saveTokenToDb(user, fcmToken);
                     } else {
                         console.log("Não foi possível obter o token de notificação.");
                     }
@@ -125,13 +122,13 @@ export const useNotificationManager = () => {
         } catch (error) {
             console.error("Erro ao registrar notificações web:", error);
         }
-    }, [uiToast, saveTokenToDb]);
+    }, [uiToast]);
 
-    const init = useCallback(() => {
+    const init = useCallback((user: User) => {
         if (Capacitor.isNativePlatform()) {
-            registerNative();
+            registerNative(user);
         } else {
-            registerWeb();
+            registerWeb(user);
         }
     }, [registerNative, registerWeb]);
 

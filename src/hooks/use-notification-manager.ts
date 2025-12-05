@@ -84,8 +84,10 @@ export const useNotificationManager = () => {
             
             if (permission === "granted") {
                 console.log("Permissão Web concedida.");
-                const vapidKey = "BGgAa0C-KPGKCA0baZggbWM9qWrGyNw4JGyECyAVGoB3Y8F7KDbMEvX0JVh3EyqOj5SkS0ozHLrmWmzr8CsJvO8"; 
-                const fcmToken = await getToken(messaging, { vapidKey });
+                
+                // When the service worker is properly configured via next-pwa,
+                // we don't need to pass the vapidKey explicitly.
+                const fcmToken = await getToken(messaging);
 
                 if (fcmToken) {
                     console.log("Token Web gerado:", fcmToken);

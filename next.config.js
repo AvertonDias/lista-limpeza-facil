@@ -4,6 +4,8 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   register: true,
   skipWaiting: true,
   disable: process.env.NODE_ENV === "development",
+  importScripts: ['https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-sw.js'],
+  pwaExcludes: [/middleware-manifest\.json$/],
 });
 
 /** @type {import('next').NextConfig} */
@@ -44,5 +46,3 @@ const nextConfig = {
 };
 
 module.exports = withPWA(nextConfig);
-
-    

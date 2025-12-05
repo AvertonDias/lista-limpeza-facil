@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useCallback } from 'react';
@@ -6,11 +5,36 @@ import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Toast } from '@capacitor/toast';
 import { getMessaging, getToken } from "firebase/messaging";
-import { messaging } from '@/lib/firebase';
+import { db, messaging } from '@/lib/firebase';
 import { useToast } from './use-toast';
+import { useAuth } from './use-auth';
+import { doc, updateDoc, arrayUnion, setDoc } from 'firebase/firestore';
+
 
 export const useNotificationManager = () => {
     const { toast: uiToast } = useToast();
+    const { user } = useAuth();
+
+    const saveTokenToDb = useCallback(async (fcmToken: string) => {
+        if (!user) {
+            console.warn("Usuário não autenticado, não é possível salvar o token.");
+            return;
+        }
+
+        try {
+            const userDocRef = doc(db, "users", user.uid);
+            // Usamos setDoc com merge para garantir que o documento exista,
+            // e arrayUnion para adicionar o token sem duplicá-lo.
+            await setDoc(userDocRef, { 
+                fcmTokens: arrayUnion(fcmToken) 
+            }, { merge: true });
+            console.log("Token FCM salvo no Firestore com sucesso.");
+
+        } catch (error) {
+            console.error("Erro ao salvar token no Firestore: ", error);
+        }
+
+    }, [user]);
 
     const registerNative = useCallback(async () => {
         let permStatus = await PushNotifications.checkPermissions();
@@ -28,22 +52,19 @@ export const useNotificationManager = () => {
 
         await PushNotifications.register();
 
-        // On success, we should be able to receive notifications
         await PushNotifications.addListener('registration',
             (token) => {
                 console.info('Registration token: ', token.value);
-                // TODO: Enviar token para o seu servidor
+                saveTokenToDb(token.value);
             }
         );
 
-        // Some issue with our setup and push will not work
         await PushNotifications.addListener('registrationError',
             (error: any) => {
                 console.error('Error on registration: ' + JSON.stringify(error));
             }
         );
 
-        // Show us the notification payload if the app is open on our device
         await PushNotifications.addListener('pushNotificationReceived',
             (notification) => {
                 console.log('Push received: ' + JSON.stringify(notification));
@@ -54,7 +75,7 @@ export const useNotificationManager = () => {
             }
         );
 
-    }, [uiToast]);
+    }, [uiToast, saveTokenToDb]);
 
     const registerWeb = useCallback(async () => {
         if (!messaging) {
@@ -74,7 +95,7 @@ export const useNotificationManager = () => {
 
                     if (fcmToken) {
                         console.log("FCM Token:", fcmToken);
-                        // TODO: Enviar este token para o seu servidor para que você possa enviar notificações.
+                        await saveTokenToDb(fcmToken);
                     } else {
                         console.log("Não foi possível obter o token de notificação.");
                     }
@@ -95,7 +116,7 @@ export const useNotificationManager = () => {
         } catch (error) {
             console.error("Erro ao registrar notificações web:", error);
         }
-    }, [uiToast]);
+    }, [uiToast, saveTokenToDb]);
 
     const init = useCallback(() => {
         if (Capacitor.isNativePlatform()) {

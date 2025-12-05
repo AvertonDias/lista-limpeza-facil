@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     apple: "/images/placeholder-icon.png",
     icon: "/images/placeholder-icon.png",
   },
-  manifest: "/manifest.webmanifest",
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {

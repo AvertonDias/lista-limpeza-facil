@@ -1,12 +1,11 @@
-// This file is intentionally left blank.
-// It is needed for Firebase Cloud Messaging to work correctly in the background for web.
-// Firebase will automatically handle the service worker logic.
+/* eslint-disable no-undef */
+// Service Worker para Firebase Cloud Messaging
 
-// Scripts for firebase and firebase messaging
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
+// Versão 9.23.0 (mais estável e compatível)
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js');
 
-// Your web app's Firebase configuration
+// Configuração do Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDizs1-cOZnBX5ilBXazQIuFJD_sUnkDCQ",
   authDomain: "studio-1326322560-ad791.firebaseapp.com",
@@ -16,20 +15,23 @@ const firebaseConfig = {
   appId: "1:417616889091:web:f2c93816e5eaec7ff4d536"
 };
 
-// Initialize Firebase
+// Inicializa o Firebase
 firebase.initializeApp(firebaseConfig);
 
-// Retrieve an instance of Firebase Messaging so that it can handle background
-// messages.
+// Recupera a instância de mensagens
 const messaging = firebase.messaging();
 
+// Handler para mensagens em segundo plano
 messaging.onBackgroundMessage(function(payload) {
-  console.log('Received background message ', payload);
+  console.log('[firebase-messaging-sw.js] Notificação recebida em background:', payload);
 
   const notificationTitle = payload.notification.title;
+  
   const notificationOptions = {
     body: payload.notification.body,
-    icon: '/images/icons/icon-192x192.png'
+    // Caminho atualizado conforme sua pasta public
+    icon: '/images/placeholder-icon.png', 
+    data: payload.data
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);

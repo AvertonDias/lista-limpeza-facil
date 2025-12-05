@@ -1,8 +1,6 @@
-
 {
   "name": "Lista Fácil",
   "short_name": "Lista Fácil",
-  "description": "Gerencie suas listas de compras de forma fácil e compartilhada.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#F5F5F5",

@@ -73,12 +73,89 @@ import {
   ShoppingCart,
   Phone,
   Package,
+  Bell,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import emailjs from '@emailjs/browser';
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useNotificationManager } from "@/hooks/use-notification-manager";
+
+
+function NotificationCard() {
+  const { user } = useAuth();
+  const { init: initNotifications } = useNotificationManager();
+  const [notificationStatus, setNotificationStatus] = useState("default");
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      setNotificationStatus(Notification.permission);
+    }
+  }, []);
+
+  const handleEnableNotifications = () => {
+    if (user) {
+      initNotifications(user)
+        .then(() => {
+           setNotificationStatus('granted');
+            toast({
+              title: "Notificações Ativadas!",
+              description: "Você será avisado sobre novos itens na sua lista.",
+            });
+        })
+        .catch(() => {
+            setNotificationStatus(Notification.permission);
+            toast({
+                variant: "destructive",
+                title: "Ativação Falhou",
+                description: "Não foi possível ativar as notificações. Por favor, verifique as permissões no seu navegador.",
+            });
+        });
+    }
+  };
+
+  if (notificationStatus === 'granted') {
+    return null; // Don't show the card if permission is already granted
+  }
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+        <Bell className="h-8 w-8 text-primary" />
+        <div className="flex-1">
+          <CardTitle>Ative as Notificações</CardTitle>
+          <CardDescription>
+            Seja avisado em tempo real quando um item for adicionado à sua lista.
+          </CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent>
+         <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button className="w-full">
+                  <Bell className="mr-2 h-4 w-4" />
+                  Ativar Notificações
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Ativar notificações?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Ao ativar, você nos permite enviar notificações push para este dispositivo quando novos itens forem adicionados à sua lista de compras.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Agora não</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleEnableNotifications}>Ativar</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
@@ -390,6 +467,9 @@ export default function DashboardPage() {
   return (
     <div className="grid gap-8 lg:grid-cols-5">
         <div className="space-y-8 lg:col-span-3">
+        
+        <NotificationCard />
+
         <div>
             <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
             <h1 className="font-headline text-3xl font-bold tracking-tight">

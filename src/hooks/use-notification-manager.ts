@@ -23,15 +23,24 @@ export const useNotificationManager = () => {
 
         try {
             const userDocRef = doc(db, "users", user.uid);
-            // Usamos setDoc com merge para garantir que o documento exista,
-            // e arrayUnion para adicionar o token sem duplicá-lo.
-            await setDoc(userDocRef, { 
+            await updateDoc(userDocRef, { 
                 fcmTokens: arrayUnion(fcmToken) 
-            }, { merge: true });
+            });
             console.log("Token FCM salvo no Firestore com sucesso.");
 
         } catch (error) {
             console.error("Erro ao salvar token no Firestore: ", error);
+            // Se o updateDoc falhar porque o documento não existe, podemos tentar criar com setDoc.
+            // Isso pode acontecer em casos raros de race condition.
+            if ((error as any).code === 'not-found') {
+                try {
+                    const userDocRef = doc(db, "users", user.uid);
+                    await setDoc(userDocRef, { fcmTokens: [fcmToken] }, { merge: true });
+                    console.log("Documento de usuário criado e token FCM salvo.");
+                } catch (e) {
+                    console.error("Erro ao tentar criar documento de usuário com token: ", e);
+                }
+            }
         }
 
     }, [user]);

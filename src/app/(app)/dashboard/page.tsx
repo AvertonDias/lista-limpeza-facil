@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
@@ -83,7 +84,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useNotificationManager } from "@/hooks/use-notification-manager";
 
 
-function NotificationCard() {
+function NotificationCard({ toast }: { toast: (options: any) => void }) {
   const { user } = useAuth();
   const { init: initNotifications } = useNotificationManager();
   const [notificationStatus, setNotificationStatus] = useState("default");
@@ -468,7 +469,7 @@ export default function DashboardPage() {
     <div className="grid gap-8 lg:grid-cols-5">
         <div className="space-y-8 lg:col-span-3">
         
-        <NotificationCard />
+        <NotificationCard toast={toast} />
 
         <div>
             <div className="flex flex-wrap items-center justify-between mb-6 gap-4">

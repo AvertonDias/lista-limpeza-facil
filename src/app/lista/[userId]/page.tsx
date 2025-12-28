@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -62,10 +61,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { sendEmail } from "@/lib/email";
 
-// This segment is not statically generated
-// It will be rendered on the server for every request
-export const dynamic = 'force-dynamic';
-
 interface UserData {
     displayName: string;
     email: string;
@@ -75,7 +70,16 @@ type FeedbackType = "suggestion" | "doubt" | null;
 
 export default function PublicListPage() {
   const params = useParams();
-  const userId = params?.userId as string;
+
+  if (!params || !params.userId) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  const userId = params.userId as string;
 
   const { toast } = useToast();
 
@@ -105,8 +109,8 @@ export default function PublicListPage() {
           subject: subject,
           message: message,
         };
-        // await sendEmail('template_ynk7ot9', templateParams);
-        console.log('Envio de e-mail desativado temporariamente.');
+        await sendEmail('template_ynk7ot9', templateParams);
+        console.log('E-mail de notificação enviado com sucesso!');
       } catch (err) {
         console.error('Falha ao enviar e-mail:', err);
       }
@@ -276,7 +280,7 @@ export default function PublicListPage() {
 
     toast({
       title: "Item Adicionado!",
-      description: `${newItem.name} foi adicionado à lista.`,
+      description: `${newItem.name} foi adicionado à lista.`
     });
     setCustomItemName("");
   }, [customItemName, shoppingList, updateShoppingListInFirestore, toast, notifyOwnerByEmail]);
@@ -510,7 +514,7 @@ export default function PublicListPage() {
                       <div className="flex gap-2">
                         <Input 
                           type="text" 
-                          placeholder="Ex: Bom Ar"
+                          placeholder="Ex: Lâmpada, Pilhas AA"
                           value={customItemName}
                           onChange={(e) => setCustomItemName(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && handleAddCustomItem()}
@@ -591,5 +595,3 @@ export default function PublicListPage() {
      </div>
   );
 }
-
-    

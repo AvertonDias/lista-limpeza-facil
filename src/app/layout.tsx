@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   title: "Lista Fácil",
   description: "Gerencie suas listas de compras de forma fácil e compartilhada.",
   icons: {
-    apple: "/images/placeholder-icon.png",
-    icon: "/images/placeholder-icon.png",
+    apple: "/images/icons/icon-512x512.png",
+    icon: "/images/icons/icon-512x512.png",
   },
   manifest: "/manifest.json",
 };

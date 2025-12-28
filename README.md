@@ -44,3 +44,15 @@ Qualquer pessoa — seja um membro da família, colega de trabalho ou visitante 
 5.  **Compre com Inteligência:** Acesse seu painel e veja a lista de compras sempre atualizada.
 
 **Com o Lista Fácil, a colaboração é a chave para uma vida mais organizada!**
+
+## Tecnologias Utilizadas
+
+- **Framework:** [Next.js](https://nextjs.org/)
+- **Linguagem:** [TypeScript](https://www.typescriptlang.org/)
+- **Estilização:** [Tailwind CSS](https://tailwindcss.com/)
+- **Componentes:** [shadcn/ui](https://ui.shadcn.com/)
+- **Banco de Dados:** [Firebase Firestore](https://firebase.google.com/docs/firestore)
+- **Autenticação:** [Firebase Authentication](https://firebase.google.com/docs/auth)
+- **Deployment:** [Vercel](https://vercel.com/)
+- **Notificações por E-mail:** [EmailJS](https://www.emailjs.com/)
+- **Progressive Web App (PWA):** [@ducanh2912/next-pwa](https://github.com/DuCanh2912/next-pwa)

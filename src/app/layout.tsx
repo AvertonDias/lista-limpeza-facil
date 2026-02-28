@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { AuthProviderClient } from "@/components/auth-provider-client";
+import Footer from "@/components/footer";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -31,7 +32,12 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <AuthProviderClient>
-          {children}
+          <div className="flex flex-col min-h-screen">
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
+          </div>
         </AuthProviderClient>
       </body>
     </html>

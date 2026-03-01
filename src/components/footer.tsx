@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ExternalLink, MessageCircle } from "lucide-react";
 
 export default function Footer() {
-  const whatsappUrl = "https://wa.me/5535991210466?text=Olá!%20Gostaria%20de%20ajuda%20no%20Lista%20Fácil.";
+  const whatsappUrl = "https://wa.me/5535991210466?text=Olá!%20Gostaria%20de%20ajuda%20com%20o%20app%20Lista%20Fácil.";
 
   return (
     <footer className="w-full border-t bg-background py-6 print:hidden">

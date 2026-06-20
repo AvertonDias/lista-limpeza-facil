@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
@@ -16,9 +16,6 @@ import {
   onSnapshot,
   setDoc,
   Timestamp,
-  getDoc,
-  arrayUnion,
-  orderBy,
 } from "firebase/firestore";
 import type { Item, ShoppingListItem, Feedback } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -72,7 +69,6 @@ import {
   MessageSquare,
   Lightbulb,
   ShoppingCart,
-  Phone,
   Package,
   Bell,
 } from "lucide-react";
@@ -117,7 +113,7 @@ function NotificationCard({ toast }: { toast: (options: any) => void }) {
   };
 
   if (notificationStatus === 'granted') {
-    return null; // Don't show the card if permission is already granted
+    return null;
   }
 
   return (
@@ -184,10 +180,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      // Init EmailJS
       emailjs.init({ publicKey: "Yj5CBlcpbHrHQeYik" });
       
-      // Listen for items
       setItemsLoading(true);
       const itemsQuery = query(collection(db, "items"), where("userId", "==", user.uid));
       const unsubscribeItems = onSnapshot(itemsQuery, (querySnapshot) => {
@@ -213,7 +207,6 @@ export default function DashboardPage() {
         setItemsLoading(false);
       });
       
-      // Listen for feedback
       setFeedbackLoading(true);
       const feedbackQuery = query(
         collection(db, "feedback"), 
@@ -221,7 +214,6 @@ export default function DashboardPage() {
       );
       const unsubscribeFeedback = onSnapshot(feedbackQuery, (snapshot) => {
         const allFeedbacks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Feedback));
-        // Sort feedback by date on the client-side
         allFeedbacks.sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
         setFeedback(allFeedbacks);
         setFeedbackLoading(false);
@@ -241,8 +233,6 @@ export default function DashboardPage() {
  useEffect(() => {
     if (!user) return;
     
-    let previousList = [...shoppingList];
-
     const shoppingListDocRef = doc(db, "shoppingLists", user.uid);
     const unsubscribeShoppingList = onSnapshot(shoppingListDocRef, (doc) => {
         if (doc.exists()) {
@@ -251,9 +241,7 @@ export default function DashboardPage() {
             if (isInitialShoppingListLoad.current) {
                 isInitialShoppingListLoad.current = false;
             }
-            // Update both the state and the ref for the next comparison
             setShoppingList(newList);
-            previousList = [...newList];
         }
     }, (e) => {
         console.error("Error listening to shopping list: ", e);
@@ -323,7 +311,6 @@ export default function DashboardPage() {
 
     try {
       if (editingItem) {
-        // Edit existing item
         const itemDoc = doc(db, "items", editingItem.id);
         await updateDoc(itemDoc, {
             name: newItemName,
@@ -333,7 +320,6 @@ export default function DashboardPage() {
           description: `O item ${newItemName} foi atualizado com sucesso.`,
         });
       } else {
-        // Add new item
         await addDoc(collection(db, "items"), {
             name: newItemName,
             userId: user.uid,
@@ -659,7 +645,6 @@ export default function DashboardPage() {
         </Card>
         </div>
         
-        {/* Mobile Sheet and FAB */}
         <div className="lg:hidden fixed bottom-6 right-6 z-40">
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetTrigger asChild>

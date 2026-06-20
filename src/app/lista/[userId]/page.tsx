@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
@@ -12,7 +13,6 @@ import {
   onSnapshot,
   setDoc,
   addDoc,
-  serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
 import type { Item, ShoppingListItem } from "@/types";
@@ -92,7 +92,6 @@ export default function PublicListPage() {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Feedback Modal State
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<FeedbackType>(null);
   const [feedbackName, setFeedbackName] = useState("");
@@ -110,24 +109,19 @@ export default function PublicListPage() {
           message: message,
         };
         await sendEmail('template_ynk7ot9', templateParams);
-        console.log('E-mail de notificação enviado com sucesso!');
       } catch (err) {
         console.error('Falha ao enviar e-mail:', err);
       }
-    } else {
-      console.error("Dono da lista não tem e-mail, não é possível notificar.");
     }
   }, [pageOwner]);
 
 
   useEffect(() => {
     if (!userId) {
-      console.error("ID de usuário inválido.");
       setError("ID de usuário inválido.");
       setPageLoading(false);
       return;
     }
-    console.log("userId em uso:", userId);
 
     let unsubscribeItems: (() => void) | undefined;
     let unsubscribeShoppingList: (() => void) | undefined;
@@ -307,7 +301,7 @@ export default function PublicListPage() {
         type: feedbackType,
         text: feedbackText,
         name: feedbackType === 'doubt' ? feedbackName : "Anônimo",
-        createdAt: serverTimestamp(),
+        createdAt: Timestamp.now(),
         status: "new",
       });
 
@@ -418,9 +412,6 @@ export default function PublicListPage() {
                         <Logo />
                     </div>
                     <span className="font-headline text-xl font-semibold">Lista Fácil</span>
-                </div>
-                <div className="md:hidden">
-                    {/* Placeholder for potential mobile-only actions */}
                 </div>
             </div>
             <Dialog open={isFeedbackModalOpen} onOpenChange={(isOpen) => {
@@ -565,7 +556,6 @@ export default function PublicListPage() {
         )}
        </main>
        
-        {/* Mobile Sheet and FAB */}
         <div className="lg:hidden">
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetTrigger asChild>

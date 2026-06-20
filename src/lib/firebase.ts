@@ -2,9 +2,9 @@
 "use client";
 
 import { initializeApp, getApps, getApp, type FirebaseOptions } from "firebase/app";
-import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, createUserWithEmailAndPassword, UserCredential, sendPasswordResetEmail, verifyPasswordResetCode, confirmPasswordReset } from "firebase/auth";
-import { getFirestore, arrayUnion, arrayRemove } from "firebase/firestore";
-import { getMessaging, onMessage } from "firebase/messaging";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, User, createUserWithEmailAndPassword, type UserCredential, sendPasswordResetEmail, verifyPasswordResetCode, confirmPasswordReset } from "firebase/auth";
+import { getFirestore, arrayUnion } from "firebase/firestore";
+import { getMessaging } from "firebase/messaging";
 
 // Your web app's Firebase configuration
 export const firebaseConfig: FirebaseOptions = {
@@ -26,5 +26,5 @@ const db = getFirestore(app);
 const messaging = (typeof window !== 'undefined') ? getMessaging(app) : null;
 
 
-export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, arrayRemove, arrayUnion, onMessage, sendPasswordResetEmail, verifyPasswordResetCode, confirmPasswordReset };
+export { app, auth, db, messaging, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, arrayUnion, sendPasswordResetEmail, verifyPasswordResetCode, confirmPasswordReset };
 export type { User, UserCredential };

@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { db } from "@/lib/firebase";
@@ -169,8 +168,6 @@ export default function DashboardPage() {
   const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const isInitialShoppingListLoad = useRef(true);
-
   useEffect(() => {
     if (!loading && !user) {
       router.push("/login");
@@ -237,10 +234,6 @@ export default function DashboardPage() {
     const unsubscribeShoppingList = onSnapshot(shoppingListDocRef, (doc) => {
         if (doc.exists()) {
             const newList = doc.data().items || [];
-            
-            if (isInitialShoppingListLoad.current) {
-                isInitialShoppingListLoad.current = false;
-            }
             setShoppingList(newList);
         }
     }, (e) => {

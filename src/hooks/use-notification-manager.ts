@@ -3,7 +3,6 @@
 import { useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
-import { Toast } from '@capacitor/toast';
 import { getToken } from "firebase/messaging";
 import { db, messaging } from '@/lib/firebase';
 import { useToast } from './use-toast';
@@ -23,35 +22,31 @@ export const useNotificationManager = () => {
                 updatedAt: new Date().toISOString()
             }, { merge: true });
 
-            console.log("Token FCM salvo/atualizado com sucesso no Firestore.");
-        } catch (error: any) {
+            console.log("Token FCM salvo com sucesso.");
+        } catch (error) {
             console.error("Erro ao salvar token no Firestore:", error);
             uiToast({
                 variant: "destructive",
-                title: "Erro de Banco de Dados",
-                description: "Não foi possível vincular o dispositivo ao seu usuário.",
+                title: "Erro de Conexão",
+                description: "Não foi possível vincular as notificações ao seu usuário.",
             });
-            throw error; // Re-throw to be caught by the caller
         }
     };
 
     const registerNative = useCallback(async (user: User) => {
-        if (!user) return Promise.reject("Usuário não encontrado.");
+        if (!user) return;
 
         await PushNotifications.removeAllListeners();
 
         PushNotifications.addListener('registration', (token) => {
-            console.info('Native Registration token: ', token.value);
             saveTokenToFirestore(user.uid, token.value);
         });
 
         PushNotifications.addListener('registrationError', (error: any) => {
             console.error('Error on native registration: ' + JSON.stringify(error));
-            throw new Error('Falha no registro nativo.');
         });
 
         PushNotifications.addListener('pushNotificationReceived', (notification) => {
-            console.log('Push received: ' + JSON.stringify(notification));
             uiToast({
                 title: notification.title || "Nova Notificação",
                 description: notification.body || "",
@@ -65,46 +60,33 @@ export const useNotificationManager = () => {
         }
 
         if (permStatus.receive !== 'granted') {
-             await Toast.show({ text: 'Permissão de notificação negada.' });
-             throw new Error('Permissão negada.');
+             throw new Error('Permissão de notificação negada.');
         }
 
         await PushNotifications.register();
     }, [uiToast]);
 
     const registerWeb = useCallback(async (user: User) => {
-        if (!user || !messaging) {
-            const errorMsg = "Usuário ou Firebase Messaging não está disponível.";
-            console.warn(errorMsg);
-            return Promise.reject(errorMsg);
-        }
+        if (!user || !messaging) return;
 
         try {
             const permission = await Notification.requestPermission();
             
             if (permission === "granted") {
-                console.log("Permissão Web concedida.");
-                
-                // When the service worker is properly configured via next-pwa,
-                // we don't need to pass the vapidKey explicitly.
                 const fcmToken = await getToken(messaging);
-
                 if (fcmToken) {
-                    console.log("Token Web gerado:", fcmToken);
                     await saveTokenToFirestore(user.uid, fcmToken);
                 } else {
-                     throw new Error("Nenhum token de registro disponível. Solicite permissão para gerar um.");
+                     throw new Error("Falha ao gerar token web.");
                 }
-
             } else {
-                console.warn("Permissão de notificação Web negada.");
-                throw new Error("Permissão de notificação Web negada.");
+                throw new Error("Permissão web negada.");
             }
         } catch (error) {
-            console.error("Erro ao registrar notificações Web:", error);
-            throw error; // Re-throw to be caught by caller
+            console.error("Erro no registro Web:", error);
+            throw error;
         }
-    }, [uiToast]);
+    }, []);
 
     const init = useCallback((user: User): Promise<void> => {
         if (Capacitor.isNativePlatform()) {
